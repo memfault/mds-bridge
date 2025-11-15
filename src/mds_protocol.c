@@ -15,11 +15,6 @@ struct mds_session {
     uint8_t last_sequence;
     bool streaming_enabled;
 
-    /* Async streaming (future enhancement) */
-    bool async_active;
-    mds_stream_callback_t stream_callback;
-    void *stream_user_data;
-
     /* Chunk upload */
     mds_chunk_upload_callback_t upload_callback;
     void *upload_user_data;
@@ -30,9 +25,11 @@ struct mds_session {
  * ========================================================================== */
 
 int mds_session_create(memfault_hid_device_t *device, mds_session_t **session) {
-    if (device == NULL || session == NULL) {
+    if (session == NULL) {
         return -EINVAL;
     }
+
+    /* Note: device can be NULL for FFI/external HID transport usage */
 
     mds_session_t *s = calloc(1, sizeof(mds_session_t));
     if (s == NULL) {
@@ -42,7 +39,6 @@ int mds_session_create(memfault_hid_device_t *device, mds_session_t **session) {
     s->device = device;
     s->last_sequence = MDS_SEQUENCE_MAX;  /* Initialize to max so first packet (0) is valid */
     s->streaming_enabled = false;
-    s->async_active = false;
 
     *session = s;
     return 0;
@@ -51,11 +47,6 @@ int mds_session_create(memfault_hid_device_t *device, mds_session_t **session) {
 void mds_session_destroy(mds_session_t *session) {
     if (session == NULL) {
         return;
-    }
-
-    /* Stop async streaming if active */
-    if (session->async_active) {
-        mds_stream_stop_async(session);
     }
 
     /* Disable streaming if enabled */
@@ -120,13 +111,8 @@ int mds_get_supported_features(mds_session_t *session, uint32_t *features) {
         return ret;
     }
 
-    /* Features is stored as little-endian 32-bit value */
-    *features = (uint32_t)data[0] |
-                ((uint32_t)data[1] << 8) |
-                ((uint32_t)data[2] << 16) |
-                ((uint32_t)data[3] << 24);
-
-    return 0;
+    /* Use the buffer-based parser */
+    return mds_parse_supported_features(data, ret, features);
 }
 
 int mds_get_device_identifier(mds_session_t *session, char *device_id, size_t max_len) {
@@ -142,12 +128,8 @@ int mds_get_device_identifier(mds_session_t *session, char *device_id, size_t ma
         return ret;
     }
 
-    /* Copy string, ensuring null termination */
-    size_t copy_len = (ret < (int)max_len) ? ret : (max_len - 1);
-    memcpy(device_id, data, copy_len);
-    device_id[copy_len] = '\0';
-
-    return 0;
+    /* Use the buffer-based parser */
+    return mds_parse_device_identifier(data, ret, device_id, max_len);
 }
 
 int mds_get_data_uri(mds_session_t *session, char *uri, size_t max_len) {
@@ -163,12 +145,8 @@ int mds_get_data_uri(mds_session_t *session, char *uri, size_t max_len) {
         return ret;
     }
 
-    /* Copy string, ensuring null termination */
-    size_t copy_len = (ret < (int)max_len) ? ret : (max_len - 1);
-    memcpy(uri, data, copy_len);
-    uri[copy_len] = '\0';
-
-    return 0;
+    /* Use the buffer-based parser */
+    return mds_parse_data_uri(data, ret, uri, max_len);
 }
 
 int mds_get_authorization(mds_session_t *session, char *auth, size_t max_len) {
@@ -184,12 +162,8 @@ int mds_get_authorization(mds_session_t *session, char *auth, size_t max_len) {
         return ret;
     }
 
-    /* Copy string, ensuring null termination */
-    size_t copy_len = (ret < (int)max_len) ? ret : (max_len - 1);
-    memcpy(auth, data, copy_len);
-    auth[copy_len] = '\0';
-
-    return 0;
+    /* Use the buffer-based parser */
+    return mds_parse_authorization(data, ret, auth, max_len);
 }
 
 /* ============================================================================
@@ -201,10 +175,16 @@ int mds_stream_enable(mds_session_t *session) {
         return -EINVAL;
     }
 
-    uint8_t mode = MDS_STREAM_MODE_ENABLED;
+    /* Use the buffer-based builder */
+    uint8_t buffer[1];
+    int bytes = mds_build_stream_control(true, buffer, sizeof(buffer));
+    if (bytes < 0) {
+        return bytes;
+    }
+
     int ret = memfault_hid_write_report(session->device,
                                          MDS_REPORT_ID_STREAM_CONTROL,
-                                         &mode, 1, 1000);
+                                         buffer, bytes, 1000);
     if (ret < 0) {
         return ret;
     }
@@ -218,10 +198,16 @@ int mds_stream_disable(mds_session_t *session) {
         return -EINVAL;
     }
 
-    uint8_t mode = MDS_STREAM_MODE_DISABLED;
+    /* Use the buffer-based builder */
+    uint8_t buffer[1];
+    int bytes = mds_build_stream_control(false, buffer, sizeof(buffer));
+    if (bytes < 0) {
+        return bytes;
+    }
+
     int ret = memfault_hid_write_report(session->device,
                                          MDS_REPORT_ID_STREAM_CONTROL,
-                                         &mode, 1, 1000);
+                                         buffer, bytes, 1000);
     if (ret < 0) {
         return ret;
     }
@@ -254,53 +240,16 @@ int mds_stream_read_packet(mds_session_t *session, mds_stream_packet_t *packet,
         return -EINVAL;  /* Wrong report type */
     }
 
-    if (ret < 1) {
-        return -EINVAL;  /* Need at least sequence byte */
-    }
-
-    /* Extract sequence number */
-    packet->sequence = mds_extract_sequence(data[0]);
-
-    /* Copy payload data */
-    packet->data_len = ret - 1;  /* Exclude sequence byte */
-    if (packet->data_len > 0) {
-        memcpy(packet->data, &data[1], packet->data_len);
+    /* Use the buffer-based parser */
+    ret = mds_parse_stream_packet(data, ret, packet);
+    if (ret < 0) {
+        return ret;
     }
 
     /* Update last sequence */
     session->last_sequence = packet->sequence;
 
     return 0;
-}
-
-int mds_stream_start_async(mds_session_t *session,
-                           mds_stream_callback_t callback,
-                           void *user_data) {
-    if (session == NULL || callback == NULL) {
-        return -EINVAL;
-    }
-
-    if (session->async_active) {
-        return -EBUSY;  /* Already running */
-    }
-
-    /* TODO: Implement async reading with threads
-     * For now, return not implemented */
-    (void)user_data;
-    return -ENOSYS;
-}
-
-int mds_stream_stop_async(mds_session_t *session) {
-    if (session == NULL) {
-        return -EINVAL;
-    }
-
-    if (!session->async_active) {
-        return 0;  /* Not running */
-    }
-
-    /* TODO: Implement async stop */
-    return -ENOSYS;
 }
 
 /* ============================================================================
@@ -365,4 +314,117 @@ bool mds_validate_sequence(uint8_t prev_seq, uint8_t new_seq) {
     uint8_t expected = (prev_seq + 1) & MDS_SEQUENCE_MASK;
 
     return (new_seq == expected);
+}
+
+/* ============================================================================
+ * Buffer-based API for FFI/External HID Transport
+ * ========================================================================== */
+
+int mds_parse_supported_features(const uint8_t *buffer, size_t buffer_len,
+                                  uint32_t *features) {
+    if (buffer == NULL || features == NULL) {
+        return -EINVAL;
+    }
+
+    if (buffer_len < 4) {
+        return -EINVAL;
+    }
+
+    /* Features is stored as little-endian 32-bit value */
+    *features = (uint32_t)buffer[0] |
+                ((uint32_t)buffer[1] << 8) |
+                ((uint32_t)buffer[2] << 16) |
+                ((uint32_t)buffer[3] << 24);
+
+    return 0;
+}
+
+int mds_parse_device_identifier(const uint8_t *buffer, size_t buffer_len,
+                                 char *device_id, size_t max_len) {
+    if (buffer == NULL || device_id == NULL || max_len == 0) {
+        return -EINVAL;
+    }
+
+    /* Copy string, ensuring null termination */
+    size_t copy_len = (buffer_len < max_len) ? buffer_len : (max_len - 1);
+    memcpy(device_id, buffer, copy_len);
+    device_id[copy_len] = '\0';
+
+    return 0;
+}
+
+int mds_parse_data_uri(const uint8_t *buffer, size_t buffer_len,
+                        char *uri, size_t max_len) {
+    if (buffer == NULL || uri == NULL || max_len == 0) {
+        return -EINVAL;
+    }
+
+    /* Copy string, ensuring null termination */
+    size_t copy_len = (buffer_len < max_len) ? buffer_len : (max_len - 1);
+    memcpy(uri, buffer, copy_len);
+    uri[copy_len] = '\0';
+
+    return 0;
+}
+
+int mds_parse_authorization(const uint8_t *buffer, size_t buffer_len,
+                             char *auth, size_t max_len) {
+    if (buffer == NULL || auth == NULL || max_len == 0) {
+        return -EINVAL;
+    }
+
+    /* Copy string, ensuring null termination */
+    size_t copy_len = (buffer_len < max_len) ? buffer_len : (max_len - 1);
+    memcpy(auth, buffer, copy_len);
+    auth[copy_len] = '\0';
+
+    return 0;
+}
+
+int mds_build_stream_control(bool enable, uint8_t *buffer, size_t buffer_len) {
+    if (buffer == NULL || buffer_len < 1) {
+        return -EINVAL;
+    }
+
+    buffer[0] = enable ? MDS_STREAM_MODE_ENABLED : MDS_STREAM_MODE_DISABLED;
+    return 1;
+}
+
+int mds_parse_stream_packet(const uint8_t *buffer, size_t buffer_len,
+                             mds_stream_packet_t *packet) {
+    if (buffer == NULL || packet == NULL) {
+        return -EINVAL;
+    }
+
+    if (buffer_len < 1) {
+        return -EINVAL;  /* Need at least sequence byte */
+    }
+
+    /* Extract sequence number */
+    packet->sequence = mds_extract_sequence(buffer[0]);
+
+    /* Copy payload data */
+    packet->data_len = buffer_len - 1;  /* Exclude sequence byte */
+    if (packet->data_len > MDS_MAX_CHUNK_DATA_LEN) {
+        packet->data_len = MDS_MAX_CHUNK_DATA_LEN;
+    }
+
+    if (packet->data_len > 0) {
+        memcpy(packet->data, &buffer[1], packet->data_len);
+    }
+
+    return 0;
+}
+
+uint8_t mds_get_last_sequence(mds_session_t *session) {
+    if (session == NULL) {
+        return 0;
+    }
+    return session->last_sequence;
+}
+
+void mds_update_last_sequence(mds_session_t *session, uint8_t sequence) {
+    if (session != NULL) {
+        session->last_sequence = sequence & MDS_SEQUENCE_MASK;
+    }
 }

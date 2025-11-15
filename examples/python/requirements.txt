@@ -1,0 +1,5 @@
+# Python HID library
+hidapi>=0.14.0
+
+# HTTP library for chunk uploads
+requests>=2.31.0

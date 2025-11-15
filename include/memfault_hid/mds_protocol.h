@@ -130,15 +130,6 @@ typedef struct {
 } mds_stream_packet_t;
 
 /**
- * @brief Callback for receiving MDS stream data
- *
- * @param packet Pointer to the stream data packet
- * @param user_data User-provided context pointer
- */
-typedef void (*mds_stream_callback_t)(const mds_stream_packet_t *packet,
-                                       void *user_data);
-
-/**
  * @brief Callback for uploading chunk data to the cloud
  *
  * This callback is invoked for each received chunk packet. The implementation
@@ -309,33 +300,6 @@ int mds_stream_read_packet(mds_session_t *session,
                            mds_stream_packet_t *packet,
                            int timeout_ms);
 
-/**
- * @brief Start asynchronous stream reading with callback
- *
- * Registers a callback that will be invoked for each received packet.
- * This creates a background thread that reads stream data.
- *
- * @param session MDS session handle
- * @param callback Callback function for received packets
- * @param user_data User context pointer passed to callback
- *
- * @return 0 on success, negative error code otherwise
- */
-int mds_stream_start_async(mds_session_t *session,
-                           mds_stream_callback_t callback,
-                           void *user_data);
-
-/**
- * @brief Stop asynchronous stream reading
- *
- * Stops the background thread and callback invocations.
- *
- * @param session MDS session handle
- *
- * @return 0 on success, negative error code otherwise
- */
-int mds_stream_stop_async(mds_session_t *session);
-
 /* ============================================================================
  * Chunk Upload
  * ========================================================================== */
@@ -408,6 +372,111 @@ bool mds_validate_sequence(uint8_t prev_seq, uint8_t new_seq);
 static inline uint8_t mds_extract_sequence(uint8_t byte0) {
     return byte0 & MDS_SEQUENCE_MASK;
 }
+
+/* ============================================================================
+ * Buffer-based API for FFI/External HID Transport
+ * ========================================================================== */
+
+/**
+ * @brief Parse supported features from feature report buffer
+ *
+ * Use this when your language/runtime handles HID I/O directly.
+ *
+ * @param buffer Feature report data (without Report ID prefix)
+ * @param buffer_len Length of buffer
+ * @param features Pointer to receive features bitmask
+ *
+ * @return 0 on success, negative error code otherwise
+ */
+int mds_parse_supported_features(const uint8_t *buffer, size_t buffer_len,
+                                  uint32_t *features);
+
+/**
+ * @brief Parse device identifier from feature report buffer
+ *
+ * @param buffer Feature report data (without Report ID prefix)
+ * @param buffer_len Length of buffer
+ * @param device_id Buffer to receive device ID (null-terminated)
+ * @param max_len Maximum length of output buffer
+ *
+ * @return 0 on success, negative error code otherwise
+ */
+int mds_parse_device_identifier(const uint8_t *buffer, size_t buffer_len,
+                                 char *device_id, size_t max_len);
+
+/**
+ * @brief Parse data URI from feature report buffer
+ *
+ * @param buffer Feature report data (without Report ID prefix)
+ * @param buffer_len Length of buffer
+ * @param uri Buffer to receive URI (null-terminated)
+ * @param max_len Maximum length of output buffer
+ *
+ * @return 0 on success, negative error code otherwise
+ */
+int mds_parse_data_uri(const uint8_t *buffer, size_t buffer_len,
+                        char *uri, size_t max_len);
+
+/**
+ * @brief Parse authorization from feature report buffer
+ *
+ * @param buffer Feature report data (without Report ID prefix)
+ * @param buffer_len Length of buffer
+ * @param auth Buffer to receive authorization (null-terminated)
+ * @param max_len Maximum length of output buffer
+ *
+ * @return 0 on success, negative error code otherwise
+ */
+int mds_parse_authorization(const uint8_t *buffer, size_t buffer_len,
+                             char *auth, size_t max_len);
+
+/**
+ * @brief Build stream control output report
+ *
+ * Creates output report data for enabling/disabling streaming.
+ *
+ * @param enable true to enable streaming, false to disable
+ * @param buffer Buffer to receive output report data (without Report ID prefix)
+ * @param buffer_len Length of buffer (should be at least 1)
+ *
+ * @return Number of bytes written, or negative error code
+ */
+int mds_build_stream_control(bool enable, uint8_t *buffer, size_t buffer_len);
+
+/**
+ * @brief Parse stream data packet from input report buffer
+ *
+ * Extracts sequence number and chunk data from a stream data input report.
+ *
+ * @param buffer Input report data (without Report ID prefix)
+ * @param buffer_len Length of buffer
+ * @param packet Pointer to receive parsed packet
+ *
+ * @return 0 on success, negative error code otherwise
+ */
+int mds_parse_stream_packet(const uint8_t *buffer, size_t buffer_len,
+                             mds_stream_packet_t *packet);
+
+/**
+ * @brief Get last sequence number from session
+ *
+ * Useful for sequence tracking when using buffer-based API.
+ *
+ * @param session MDS session handle
+ *
+ * @return Last received sequence number (0-31)
+ */
+uint8_t mds_get_last_sequence(mds_session_t *session);
+
+/**
+ * @brief Update last sequence number in session
+ *
+ * Call this after successfully processing a packet when using buffer-based API.
+ *
+ * @param session MDS session handle
+ * @param sequence New sequence number to store
+ */
+void mds_update_last_sequence(mds_session_t *session, uint8_t sequence);
 
 #ifdef __cplusplus
 }
