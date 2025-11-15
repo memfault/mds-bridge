@@ -1,0 +1,55 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+out/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+*.cmake
+!CMakeLists.txt
+!cmake/*.cmake
+!cmake/*.cmake.in
+CTestTestfile.cmake
+_deps/
+
+# Compiled files
+*.o
+*.obj
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.cache/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Testing
+Testing/
+*.log
+
+# Package managers
+*.deb
+*.rpm
+*.pkg
+*.dmg
+
+# Claude code
+.claude/
