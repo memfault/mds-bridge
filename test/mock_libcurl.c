@@ -59,6 +59,11 @@ const uint8_t* mock_curl_get_last_data(size_t *len) {
 
 CURL *curl_easy_init(void) {
     printf("[MOCK CURL] curl_easy_init()\n");
+    /* Initialize mock state with default success values */
+    if (mock_state.response_code == 0) {
+        mock_state.response_code = 202;  /* HTTP 202 Accepted (Memfault default) */
+        mock_state.error_code = CURLE_OK;
+    }
     /* Return a non-NULL pointer (not actually used, just needs to be non-NULL) */
     static int dummy = 0;
     return (CURL *)&dummy;

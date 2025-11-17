@@ -4,7 +4,7 @@ This directory contains test programs for the memfault_hid library using mocked 
 
 ## Test Suites
 
-The tests are split into two independent test suites:
+The tests are split into three independent test suites:
 
 ### 1. HID Tests (`test_hid`)
 Tests HID device communication and MDS protocol functionality with mock hidapi.
@@ -36,6 +36,32 @@ Tests chunk upload functionality with mock libcurl. This suite tests the built-i
 - HTTP request success/failure handling
 - Upload statistics tracking
 - Error handling (network errors, HTTP errors, invalid auth)
+
+### 3. End-to-End Integration Test (`test_mds_e2e`)
+Simulates the complete MDS gateway workflow without requiring physical hardware.
+
+**Files:**
+- **test_mds_e2e.c**: Complete gateway workflow test
+- **mock_hidapi.c**: Simulates HID device
+- **mock_libcurl.c**: Simulates HTTP upload to cloud
+
+**Workflow tested:**
+1. Initialize library and open device
+2. Create MDS session
+3. Read device configuration
+4. Set up uploader with mock HTTP
+5. Enable streaming
+6. Process stream packets
+7. Upload chunks to mock cloud
+8. Verify upload statistics
+9. Clean shutdown
+
+**Why this test is useful:**
+- ✅ Validates entire gateway workflow without hardware
+- ✅ Tests integration between HID, MDS protocol, and upload layers
+- ✅ Verifies that all components work together correctly
+- ✅ Can be run in CI/CD pipelines
+- ✅ Provides confidence before testing with physical devices
 
 ## Mock HID Device
 
@@ -102,6 +128,9 @@ cd build
 
 # Run upload tests only
 ./test/test_upload
+
+# Run end-to-end integration test
+./test/test_mds_e2e
 ```
 
 #### Option 3: Run with CTest for detailed output
@@ -128,13 +157,15 @@ ctest -V
 Running tests...
 Test project /path/to/build
     Start 1: HID_Tests
-1/2 Test #1: HID_Tests ........................   Passed    0.11 sec
+1/3 Test #1: HID_Tests ........................   Passed    0.11 sec
     Start 2: Upload_Tests
-2/2 Test #2: Upload_Tests .....................   Passed    0.01 sec
+2/3 Test #2: Upload_Tests .....................   Passed    0.01 sec
+    Start 3: MDS_E2E_Test
+3/3 Test #3: MDS_E2E_Test .....................   Passed    0.01 sec
 
-100% tests passed, 0 tests failed out of 2
+100% tests passed, 0 tests failed out of 3
 
-Total Test time (real) =   0.12 sec
+Total Test time (real) =   0.13 sec
 ```
 
 **HID Test Suite (`./test/test_hid`):**
@@ -182,9 +213,62 @@ Result:       PASS
 ========================================
 ```
 
+**End-to-End Integration Test (`./test/test_mds_e2e`):**
+
+```
+╔════════════════════════════════════════════════════════════╗
+║  MDS Gateway End-to-End Integration Test                  ║
+║  Tests complete workflow with mocked device and cloud     ║
+╚════════════════════════════════════════════════════════════╝
+
+▸ Initializing HID library
+  ✓ Library initialized
+
+▸ Opening mock HID device
+  ✓ Device opened
+  ✓ Device handle is valid
+
+▸ Creating MDS session
+  ✓ MDS session created
+  ✓ Session handle is valid
+
+▸ Reading device configuration
+  ✓ Configuration read successfully
+  Device ID:     test-device-12345
+  Data URI:      https://chunks.memfault.com/api/v0/chunks/test-device
+  Authorization: Memfault-Project-Key:test_project_key_12345
+  Features:      0x00000000
+
+▸ Processing stream packets
+  Processing up to 5 chunks...
+  Chunk 1 processed
+    Uploaded: 1 chunks, 19 bytes, status: 202
+  Chunk 2 processed
+    Uploaded: 2 chunks, 38 bytes, status: 202
+  Chunk 3 processed
+    Uploaded: 3 chunks, 57 bytes, status: 202
+
+▸ Verifying upload statistics
+  Chunks uploaded:   3
+  Bytes uploaded:    57
+  Upload failures:   0
+  Last HTTP status:  202
+  ✓ All assertions passed
+
+╔════════════════════════════════════════════════════════════╗
+║  Test Summary                                              ║
+╠════════════════════════════════════════════════════════════╣
+║  Assertions Passed:  23                                    ║
+║  Assertions Failed:  0                                     ║
+╠════════════════════════════════════════════════════════════╣
+║  Result: ✓ ALL TESTS PASSED                               ║
+╚════════════════════════════════════════════════════════════╝
+```
+
 **Test Coverage:**
 - **HID Tests (20 tests, 51 assertions)**: Core HID functionality, MDS protocol, session management, streaming
 - **Upload Tests (12 tests, 40 assertions)**: HTTP upload functionality, error handling, statistics
+- **E2E Integration Test (23 assertions)**: Complete gateway workflow from device to cloud
 
 The `[MOCK]` prefix shows which hidapi functions are being called, helping with debugging and understanding the test flow.
 
