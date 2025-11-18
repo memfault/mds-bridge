@@ -1,23 +1,26 @@
 /**
- * @file memfault_hid.h
- * @brief Cross-platform HID device communication library
+ * @file memfault_hid_internal.h
+ * @brief Internal HID API - extends public API with device I/O operations
  *
- * This library provides a simple interface for communicating with HID devices
- * using custom report types. It supports multiple platforms (Windows, macOS, Linux)
- * and can be integrated into applications that use other HID reports for additional
- * device functionality.
+ * This header includes the public API and adds internal functions for:
+ * - Device opening/closing
+ * - Report filtering
+ * - Low-level report I/O (read/write/get/set)
+ * - Device configuration
+ *
+ * Applications should generally use the public API in memfault_hid.h or
+ * the high-level MDS API in mds_protocol.h instead.
  */
 
-#ifndef MEMFAULT_HID_H
-#define MEMFAULT_HID_H
+#ifndef MEMFAULT_HID_INTERNAL_H
+#define MEMFAULT_HID_INTERNAL_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+/* Include public API */
+#include "memfault_hid/memfault_hid.h"
 
 /* Version information */
 #define MEMFAULT_HID_VERSION_MAJOR 1
@@ -26,25 +29,6 @@ extern "C" {
 
 /* Maximum report size (increased to support MDS feature reports up to 128 bytes) */
 #define MEMFAULT_HID_MAX_REPORT_SIZE 256
-
-/**
- * @brief Error codes
- */
-typedef enum {
-    MEMFAULT_HID_SUCCESS = 0,
-    MEMFAULT_HID_ERROR_INVALID_PARAM = -1,
-    MEMFAULT_HID_ERROR_NOT_FOUND = -2,
-    MEMFAULT_HID_ERROR_NO_DEVICE = -3,
-    MEMFAULT_HID_ERROR_ACCESS_DENIED = -4,
-    MEMFAULT_HID_ERROR_IO = -5,
-    MEMFAULT_HID_ERROR_TIMEOUT = -6,
-    MEMFAULT_HID_ERROR_BUSY = -7,
-    MEMFAULT_HID_ERROR_NO_MEM = -8,
-    MEMFAULT_HID_ERROR_NOT_SUPPORTED = -9,
-    MEMFAULT_HID_ERROR_ALREADY_OPEN = -10,
-    MEMFAULT_HID_ERROR_INVALID_REPORT_TYPE = -11,
-    MEMFAULT_HID_ERROR_UNKNOWN = -99
-} memfault_hid_error_t;
 
 /**
  * @brief Report types (HID report types)
@@ -64,22 +48,6 @@ typedef struct memfault_hid_device memfault_hid_device_t;
 #endif
 
 /**
- * @brief Device information structure
- */
-typedef struct {
-    char path[256];                  /* Platform-specific device path */
-    uint16_t vendor_id;              /* USB Vendor ID */
-    uint16_t product_id;             /* USB Product ID */
-    wchar_t serial_number[128];      /* Serial number (wide string) */
-    uint16_t release_number;         /* Device release number */
-    wchar_t manufacturer[128];       /* Manufacturer string (wide string) */
-    wchar_t product[128];            /* Product string (wide string) */
-    uint16_t usage_page;             /* HID usage page */
-    uint16_t usage;                  /* HID usage */
-    int interface_number;            /* USB interface number */
-} memfault_hid_device_info_t;
-
-/**
  * @brief Report filter configuration
  *
  * This structure allows the library to filter reports by Report ID,
@@ -90,56 +58,6 @@ typedef struct {
     size_t num_report_ids;           /* Number of Report IDs in the array */
     bool filter_enabled;             /* Enable/disable filtering */
 } memfault_hid_report_filter_t;
-
-/* ============================================================================
- * Library Initialization
- * ========================================================================== */
-
-/**
- * @brief Initialize the HID library
- *
- * This function must be called before any other library functions.
- *
- * @return MEMFAULT_HID_SUCCESS on success, error code otherwise
- */
-int memfault_hid_init(void);
-
-/**
- * @brief Cleanup and shutdown the HID library
- *
- * This function should be called when done using the library.
- *
- * @return MEMFAULT_HID_SUCCESS on success, error code otherwise
- */
-int memfault_hid_exit(void);
-
-/* ============================================================================
- * Device Enumeration
- * ========================================================================== */
-
-/**
- * @brief Enumerate all HID devices matching the specified VID/PID
- *
- * @param vendor_id USB Vendor ID (0x0000 for all vendors)
- * @param product_id USB Product ID (0x0000 for all products)
- * @param devices Pointer to receive array of device info structures
- * @param num_devices Pointer to receive the number of devices found
- *
- * @return MEMFAULT_HID_SUCCESS on success, error code otherwise
- *
- * @note The caller must free the returned device list using memfault_hid_free_device_list()
- */
-int memfault_hid_enumerate(uint16_t vendor_id,
-                           uint16_t product_id,
-                           memfault_hid_device_info_t **devices,
-                           size_t *num_devices);
-
-/**
- * @brief Free device list returned by memfault_hid_enumerate()
- *
- * @param devices Device list to free
- */
-void memfault_hid_free_device_list(memfault_hid_device_info_t *devices);
 
 /* ============================================================================
  * Device Management
@@ -311,15 +229,6 @@ int memfault_hid_set_feature_report(memfault_hid_device_t *device,
  * ========================================================================== */
 
 /**
- * @brief Get error string for an error code
- *
- * @param error Error code
- *
- * @return Human-readable error string
- */
-const char *memfault_hid_error_string(int error);
-
-/**
  * @brief Get library version string
  *
  * @return Version string (e.g., "1.0.0")
@@ -340,4 +249,4 @@ int memfault_hid_set_nonblocking(memfault_hid_device_t *device, bool nonblock);
 }
 #endif
 
-#endif /* MEMFAULT_HID_H */
+#endif /* MEMFAULT_HID_INTERNAL_H */

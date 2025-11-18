@@ -11,6 +11,14 @@
 
 /* Stub implementations - these should never be called in upload-only tests */
 
+int memfault_hid_init(void) {
+    return MEMFAULT_HID_SUCCESS;  /* No-op for tests */
+}
+
+int memfault_hid_exit(void) {
+    return MEMFAULT_HID_SUCCESS;  /* No-op for tests */
+}
+
 int memfault_hid_write_report(memfault_hid_device_t *device, uint8_t report_id,
                                const uint8_t *data, size_t length, int timeout_ms) {
     (void)device;

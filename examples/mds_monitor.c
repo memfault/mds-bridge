@@ -19,7 +19,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <time.h>
-#include "../src/memfault_hid_internal.h"  /* For device enumeration */
+#include "memfault_hid/memfault_hid.h"  /* For device enumeration */
 #include "memfault_hid/mds_protocol.h"
 
 /* Global flag for clean shutdown */

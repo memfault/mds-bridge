@@ -104,6 +104,12 @@ int mds_backend_hid_create(uint16_t vendor_id, uint16_t product_id,
         return MEMFAULT_HID_ERROR_INVALID_PARAM;
     }
 
+    /* Initialize HID library if not already done */
+    int result = memfault_hid_init();
+    if (result < 0) {
+        return result;
+    }
+
     /* Allocate backend structure */
     mds_hid_backend_t *hid_backend = calloc(1, sizeof(mds_hid_backend_t));
     if (!hid_backend) {
@@ -115,8 +121,8 @@ int mds_backend_hid_create(uint16_t vendor_id, uint16_t product_id,
     hid_backend->base.impl_data = hid_backend;
 
     /* Open HID device */
-    int result = memfault_hid_open(vendor_id, product_id, serial_number,
-                                    &hid_backend->device);
+    result = memfault_hid_open(vendor_id, product_id, serial_number,
+                               &hid_backend->device);
     if (result < 0) {
         free(hid_backend);
         return result;
@@ -139,6 +145,12 @@ int mds_backend_hid_create_path(const char *path, mds_backend_t **backend) {
         return MEMFAULT_HID_ERROR_INVALID_PARAM;
     }
 
+    /* Initialize HID library if not already done */
+    int result = memfault_hid_init();
+    if (result < 0) {
+        return result;
+    }
+
     /* Allocate backend structure */
     mds_hid_backend_t *hid_backend = calloc(1, sizeof(mds_hid_backend_t));
     if (!hid_backend) {
@@ -150,7 +162,7 @@ int mds_backend_hid_create_path(const char *path, mds_backend_t **backend) {
     hid_backend->base.impl_data = hid_backend;
 
     /* Open HID device by path */
-    int result = memfault_hid_open_path(path, &hid_backend->device);
+    result = memfault_hid_open_path(path, &hid_backend->device);
     if (result < 0) {
         free(hid_backend);
         return result;
