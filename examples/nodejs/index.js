@@ -14,15 +14,75 @@
  * - Cleaner, simpler code
  * - Less duplication between C and JS
  * - Demonstrates how to create custom backends for other transports (Serial, BLE, etc.)
+ *
+ * Usage:
+ *   node index.js                    # Use default VID/PID
+ *   node index.js <vid> <pid>        # Specify VID/PID in hex
+ *   node index.js 0x1234 0x5678
+ *   node index.js 1234 5678 --no-upload  # Disable cloud uploads
  */
 
 import HID from 'node-hid';
 import { MDSClient } from './mds-client.js';
 
-// Configuration
-const VENDOR_ID = 0x1234;   // Replace with your device's VID
-const PRODUCT_ID = 0x5678;   // Replace with your device's PID
-const UPLOAD_TO_CLOUD = false; // Set to true to upload chunks to Memfault
+// Configuration - Default values, can be overridden via CLI
+let VENDOR_ID = 0x1234;   // Replace with your device's VID
+let PRODUCT_ID = 0x5678;   // Replace with your device's PID
+let UPLOAD_TO_CLOUD = false; // Set to true to upload chunks to Memfault
+
+/**
+ * Parse command line arguments
+ */
+function parseArgs() {
+  const args = process.argv.slice(2);
+
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(`
+Memfault MDS Gateway Example
+
+Usage:
+  node index.js [vid] [pid] [--no-upload]
+
+Arguments:
+  vid         USB Vendor ID (hex, with or without 0x prefix)
+  pid         USB Product ID (hex, with or without 0x prefix)
+  --no-upload Disable chunk uploads to Memfault cloud
+
+Examples:
+  node index.js                    # Use default VID/PID
+  node index.js 1234 5678          # VID=0x1234, PID=0x5678
+  node index.js 0x1234 0x5678      # Same with 0x prefix
+  node index.js 1234 5678 --no-upload  # Disable uploads
+`);
+    process.exit(0);
+  }
+
+  // Filter out flags
+  const positional = args.filter(arg => !arg.startsWith('--'));
+  const flags = args.filter(arg => arg.startsWith('--'));
+
+  // Parse VID/PID
+  if (positional.length >= 2) {
+    VENDOR_ID = parseInt(positional[0], 16);
+    PRODUCT_ID = parseInt(positional[1], 16);
+
+    if (isNaN(VENDOR_ID) || isNaN(PRODUCT_ID)) {
+      console.error('Error: VID and PID must be valid hex numbers');
+      process.exit(1);
+    }
+  } else if (positional.length === 1) {
+    console.error('Error: Both VID and PID must be specified together');
+    process.exit(1);
+  }
+
+  // Parse flags
+  if (flags.includes('--no-upload')) {
+    UPLOAD_TO_CLOUD = false;
+  }
+}
+
+// Parse CLI arguments
+parseArgs();
 
 // Statistics
 let stats = {

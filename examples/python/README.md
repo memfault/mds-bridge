@@ -2,6 +2,27 @@
 
 This example demonstrates how to use the Memfault Diagnostic Service (MDS) protocol with a custom backend using Python's ctypes FFI.
 
+## Quick Start
+
+```bash
+# 1. Build the C library
+cd ../..
+cmake -B build -DBUILD_SHARED_LIBS=ON
+cmake --build build
+
+# 2. Install Python dependencies
+cd examples/python
+pip3 install -r requirements.txt
+
+# 3. Update main.py with your device VID/PID
+# Edit the Config class at the top of main.py
+
+# 4. Run the example
+python3 main.py
+```
+
+The application will connect to your HID device, read its configuration, enable diagnostic streaming, and display received chunks. Press Ctrl+C to stop.
+
 ## Architecture
 
 This example implements the pluggable backend architecture:

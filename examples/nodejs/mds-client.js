@@ -237,9 +237,9 @@ export class MDSClient {
       throw new Error('Device config not loaded');
     }
 
-    // Parse authorization header (format: "HeaderName:HeaderValue")
+    // Parse authorization header (format: "HeaderName:HeaderValue" or "HeaderName: HeaderValue")
     const authParts = this.config.authorization.split(':', 2);
-    const authHeader = authParts.length === 2 ? { [authParts[0]]: authParts[1] } : {};
+    const authHeader = authParts.length === 2 ? { [authParts[0].trim()]: authParts[1].trim() } : {};
 
     try {
       const response = await fetch(this.config.dataUri, {

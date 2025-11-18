@@ -139,15 +139,15 @@ class HIDBackend:
         """
         print(f"[HID Backend] WRITE request: report_id=0x{report_id:02x}, length={length}")
 
-        # Feature reports use write (Report ID 0x05 - stream control)
+        # All write operations in MDS use SET_FEATURE (Report ID 0x05 - stream control)
         if report_id == MDS_REPORT_ID.STREAM_CONTROL:
             try:
                 # Copy data from C buffer to Python bytes
                 data = bytes([buffer[i] for i in range(length)])
 
-                # hidapi write() expects [report_id, ...data]
+                # send_feature_report() expects [report_id, ...data]
                 report = bytes([report_id]) + data
-                bytes_written = self.device.write(list(report))
+                bytes_written = self.device.send_feature_report(list(report))
 
                 print(f"[HID Backend] Feature report written: {length} bytes")
                 return length

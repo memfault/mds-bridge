@@ -261,13 +261,13 @@ class MDSClient:
         if not self.config:
             raise RuntimeError("Device config not loaded")
 
-        # Parse authorization header (format: "HeaderName:HeaderValue")
+        # Parse authorization header (format: "HeaderName:HeaderValue" or "HeaderName: HeaderValue")
         auth_parts = self.config.authorization.split(':', 1)
         headers = {
             'Content-Type': 'application/octet-stream',
         }
         if len(auth_parts) == 2:
-            headers[auth_parts[0]] = auth_parts[1]
+            headers[auth_parts[0].strip()] = auth_parts[1].strip()
 
         try:
             response = requests.post(

@@ -8,19 +8,26 @@ This example demonstrates using hidapi for both:
 
 The MDS protocol logic is handled by the C library via ctypes,
 while hidapi manages all actual HID I/O.
+
+Usage:
+  ./main.py                    # Use default VID/PID from config
+  ./main.py <vid> <pid>        # Specify VID/PID in hex
+  ./main.py 0x1234 0x5678
+  ./main.py --no-upload        # Disable cloud uploads
 """
 
 import hid
 import time
 import signal
 import sys
+import argparse
 from typing import Optional
 from dataclasses import dataclass
 
 from mds_client import MDSClient, StreamPacket
 
 
-# Configuration - Update these values for your device
+# Configuration - Default values, can be overridden via CLI
 @dataclass
 class Config:
     vendor_id: int = 0x1234    # Replace with your device's VID
@@ -31,45 +38,60 @@ class Config:
 CONFIG = Config()
 
 
-class CustomHIDApp:
-    """
-    Custom application logic
-    This represents your existing HID application code
-    """
+def parse_hex(value: str) -> int:
+    """Parse hex value with or without 0x prefix"""
+    if value.lower().startswith('0x'):
+        return int(value, 16)
+    return int(value, 16)
 
-    def __init__(self, device):
-        self.device = device
 
-    def send_custom_command(self, report_id: int, data: list) -> None:
-        """
-        Example: Send a custom command to the device
-        This could be any application-specific HID communication
-        """
-        print(f"[CustomApp] Sending custom command (Report ID: 0x{report_id:02x})")
-        report = [report_id] + data
-        self.device.write(report)
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description='Memfault HID + MDS Example Application',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                    # Use default VID/PID
+  %(prog)s 1234 5678          # VID=0x1234, PID=0x5678
+  %(prog)s 0x1234 0x5678      # Same with 0x prefix
+  %(prog)s 1234 5678 --no-upload  # Disable cloud uploads
+"""
+    )
 
-    def process_custom_report(self, data: bytes) -> bool:
-        """
-        Example: Process custom HID reports
-        Returns True if the report was handled, False otherwise
-        """
-        if not data or len(data) < 1:
-            return False
+    parser.add_argument(
+        'vid',
+        nargs='?',
+        type=parse_hex,
+        help='USB Vendor ID (hex, with or without 0x prefix)'
+    )
+    parser.add_argument(
+        'pid',
+        nargs='?',
+        type=parse_hex,
+        help='USB Product ID (hex, with or without 0x prefix)'
+    )
+    parser.add_argument(
+        '--no-upload',
+        action='store_true',
+        help='Disable chunk uploads to Memfault cloud'
+    )
 
-        report_id = data[0]
+    args = parser.parse_args()
 
-        # Handle your custom reports here
-        # For this example, we'll just log them
-        data_preview = ' '.join(f'{b:02x}' for b in data[1:min(8, len(data))])
-        print(f"[CustomApp] Received report 0x{report_id:02x}: {data_preview}...")
-        return True
+    # Update config from CLI args
+    if args.vid is not None:
+        CONFIG.vendor_id = args.vid
+    if args.pid is not None:
+        CONFIG.product_id = args.pid
+    if args.no_upload:
+        CONFIG.upload_chunks = False
 
-    def do_periodic_task(self) -> None:
-        """Example: Periodic application task"""
-        # Your application logic here
-        # For example: reading sensors, updating UI, etc.
-        print('[CustomApp] Performing periodic task...')
+    # Validate that both VID and PID are provided if either is
+    if (args.vid is None) != (args.pid is None):
+        parser.error("Both VID and PID must be specified together")
+
+    return args
 
 
 class Application:
@@ -120,10 +142,6 @@ class Application:
         print("Device opened successfully\n")
 
     def initialize(self) -> None:
-        """Initialize MDS and custom app"""
-        # Create custom app instance
-        self.custom_app = CustomHIDApp(self.device)
-
         # Create and initialize MDS client
         self.mds_client = MDSClient(self.device)
         self.mds_client.initialize()
@@ -152,16 +170,14 @@ class Application:
     def handle_hid_data(self, data: bytes) -> None:
         """
         Handle incoming HID data
-        Routes data to either MDS client or custom app
+        Routes data to either MDS client or elsewhere
         """
         # Let MDS process first - returns True if it handled the data
         if self.mds_client.process(data):
             return  # MDS handled it
 
-        # Not MDS data - handle as custom report
-        handled = self.custom_app.process_custom_report(data)
-        if handled:
-            self.stats['custom_reports'] += 1
+        # Non MDS HID report, handle with your own code here.
+        pass
 
     def start(self) -> None:
         """Start the application"""
@@ -176,35 +192,12 @@ class Application:
         print("Application running. Press Ctrl+C to exit.\n")
 
         # Main loop
-        last_periodic_task = time.time()
-        last_stats_report = time.time()
-        periodic_task_interval = 10.0  # seconds
-        stats_report_interval = 30.0   # seconds
-
         try:
             while self.running:
                 # Read from HID device (non-blocking)
                 data = self.device.read(64, timeout_ms=100)
                 if data:
                     self.handle_hid_data(bytes(data))
-
-                current_time = time.time()
-
-                # Periodic custom app task
-                if current_time - last_periodic_task >= periodic_task_interval:
-                    self.custom_app.do_periodic_task()
-                    last_periodic_task = current_time
-
-                    # Example: Send a custom command periodically
-                    # Uncomment this if you want to test custom HID commands
-                    # self.custom_app.send_custom_command(0x10, [0x01, 0x02, 0x03])
-
-                # Stats reporting
-                if current_time - last_stats_report >= stats_report_interval:
-                    print(f"\n[Stats] Chunks: {self.stats['chunks_received']} received, "
-                          f"{self.stats['chunks_uploaded']} uploaded, "
-                          f"Custom reports: {self.stats['custom_reports']}\n")
-                    last_stats_report = current_time
 
                 # Small sleep to prevent busy-waiting
                 time.sleep(0.01)
@@ -231,11 +224,13 @@ class Application:
         print(f"\nFinal stats:")
         print(f"  Chunks received: {self.stats['chunks_received']}")
         print(f"  Chunks uploaded: {self.stats['chunks_uploaded']}")
-        print(f"  Custom reports: {self.stats['custom_reports']}")
 
 
 def main():
     """Main entry point"""
+    # Parse command line arguments
+    parse_args()
+
     print("=" * 60)
     print("Memfault HID + MDS Example Application")
     print("=" * 60)

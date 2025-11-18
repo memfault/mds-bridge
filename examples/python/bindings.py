@@ -19,37 +19,61 @@ from typing import Optional
 # Get library path based on platform
 def get_library_path() -> str:
     """Find the memfault_hid shared library"""
-    root_dir = Path(__file__).parent.parent.parent
-    build_dir = root_dir / 'build'
+    current_dir = Path(__file__).parent
 
     system = platform.system()
     if system == 'Darwin':
         lib_name = 'libmemfault_hid.dylib'
+        lib_name_versioned = 'libmemfault_hid.1.dylib'
     elif system == 'Linux':
         lib_name = 'libmemfault_hid.so'
+        lib_name_versioned = 'libmemfault_hid.so.1'
     elif system == 'Windows':
         lib_name = 'memfault_hid.dll'
+        lib_name_versioned = None
     else:
         raise RuntimeError(f"Unsupported platform: {system}")
 
+    # Strategy 1: Check if we're in build/examples/python (running from build folder)
+    # Library would be in build/ (two levels up)
+    build_dir = current_dir.parent.parent
     lib_path = build_dir / lib_name
-    if not lib_path.exists():
-        # Try versioned library
-        if system == 'Darwin':
-            lib_path = build_dir / 'libmemfault_hid.1.dylib'
-        elif system == 'Linux':
-            lib_path = build_dir / 'libmemfault_hid.so.1'
+    if lib_path.exists():
+        print(f"Loading Memfault HID library from: {lib_path}")
+        return str(lib_path)
 
-    if not lib_path.exists():
-        raise FileNotFoundError(
-            f"Library not found: {lib_path}\n"
-            f"Please build the library first:\n"
-            f"  cd {root_dir}\n"
-            f"  cmake -B build -DBUILD_SHARED_LIBS=ON\n"
-            f"  cmake --build build"
-        )
+    # Try versioned library
+    if lib_name_versioned:
+        lib_path = build_dir / lib_name_versioned
+        if lib_path.exists():
+            print(f"Loading Memfault HID library from: {lib_path}")
+            return str(lib_path)
 
-    return str(lib_path)
+    # Strategy 2: Check if we're in examples/python (source folder)
+    # Library would be in ../../build
+    root_dir = current_dir.parent.parent
+    build_dir = root_dir / 'build'
+    lib_path = build_dir / lib_name
+    if lib_path.exists():
+        print(f"Loading Memfault HID library from: {lib_path}")
+        return str(lib_path)
+
+    if lib_name_versioned:
+        lib_path = build_dir / lib_name_versioned
+        if lib_path.exists():
+            print(f"Loading Memfault HID library from: {lib_path}")
+            return str(lib_path)
+
+    # Not found - provide helpful error
+    raise FileNotFoundError(
+        f"Library not found in:\n"
+        f"  {current_dir.parent.parent / lib_name}\n"
+        f"  {root_dir / 'build' / lib_name}\n"
+        f"Please build the library first:\n"
+        f"  cd {root_dir}\n"
+        f"  cmake -B build -DBUILD_SHARED_LIBS=ON\n"
+        f"  cmake --build build"
+    )
 
 # MDS Report IDs
 class MDS_REPORT_ID:
