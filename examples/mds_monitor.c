@@ -19,8 +19,8 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <time.h>
-#include "memfault_hid/memfault_hid.h"  /* For device enumeration */
-#include "memfault_hid/mds_protocol.h"
+#include "mds_bridge/memfault_hid.h"  /* For device enumeration */
+#include "mds_bridge/mds_protocol.h"
 
 /* Global flag for clean shutdown */
 static volatile bool g_running = true;

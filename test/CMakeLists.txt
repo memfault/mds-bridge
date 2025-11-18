@@ -97,7 +97,7 @@ add_test(NAME MDS_E2E_Test COMMAND test_mds_e2e)
 
 # Installation (optional)
 install(TARGETS test_hid test_upload test_mds_e2e
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/memfault_hid_tests
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/mds_bridge_tests
 )
 
 message(STATUS "HID tests will be built with mock hidapi")

@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 /* Include public API */
-#include "memfault_hid/memfault_hid.h"
+#include "mds_bridge/memfault_hid.h"
 
 /* Version information */
 #define MEMFAULT_HID_VERSION_MAJOR 1

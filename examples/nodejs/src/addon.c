@@ -1,6 +1,6 @@
 #include <node_api.h>
-#include <memfault_hid/mds_protocol.h>
-#include <memfault_hid/mds_backend.h>
+#include <mds_bridge/mds_protocol.h>
+#include <mds_bridge/mds_backend.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

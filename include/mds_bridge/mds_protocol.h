@@ -16,8 +16,8 @@
  * - Stream reports deliver diagnostic chunk data
  */
 
-#ifndef MEMFAULT_MDS_PROTOCOL_H
-#define MEMFAULT_MDS_PROTOCOL_H
+#ifndef MDS_BRIDGE_MDS_PROTOCOL_H
+#define MDS_BRIDGE_MDS_PROTOCOL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -466,4 +466,4 @@ int mds_process_stream(mds_session_t *session,
 }
 #endif
 
-#endif /* MEMFAULT_MDS_PROTOCOL_H */
+#endif /* MDS_BRIDGE_MDS_PROTOCOL_H */

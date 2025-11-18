@@ -1,4 +1,4 @@
-# Memfault HID Library
+# MDS Bridge Library
 
 A cross-platform C library implementing the Memfault Diagnostic Service (MDS) protocol with pluggable backend support. The library provides a transport-agnostic protocol layer with built-in HID backend, enabling diagnostic data bridging from embedded devices to gateway applications.
 
@@ -155,7 +155,7 @@ cmake -DBUILD_SHARED_LIBS=OFF -DBUILD_EXAMPLES=ON ..
 The primary use case is implementing the Memfault Diagnostic Service (MDS) protocol over USB HID. The library provides a simplified API that handles device management automatically.
 
 ```c
-#include "memfault_hid/mds_protocol.h"
+#include "mds_bridge/mds_protocol.h"
 
 int main(void) {
     // Create MDS session (opens HID device and initializes automatically)
@@ -265,7 +265,7 @@ while (running) {
 **Option 2: Built-in HTTP Uploader**
 
 ```c
-#include "memfault_hid/chunks_uploader.h"
+#include "mds_bridge/chunks_uploader.h"
 
 // Create uploader
 chunks_uploader_t *uploader = chunks_uploader_create();
@@ -294,7 +294,7 @@ chunks_uploader_destroy(uploader);
 For applications that need to list/select HID devices:
 
 ```c
-#include "memfault_hid/memfault_hid.h"
+#include "mds_bridge/memfault_hid.h"
 
 // Initialize HID library
 memfault_hid_init();
@@ -326,7 +326,7 @@ memfault_hid_exit();
 Implement your own transport by providing the backend vtable:
 
 ```c
-#include "memfault_hid/mds_backend.h"
+#include "mds_bridge/mds_backend.h"
 
 // Your backend state
 typedef struct {
@@ -432,10 +432,10 @@ See [examples/README.md](examples/README.md) for detailed documentation.
 
 The library provides three public headers:
 
-- **`memfault_hid/memfault_hid.h`** - Device enumeration and library initialization
-- **`memfault_hid/mds_protocol.h`** - High-level MDS protocol API
-- **`memfault_hid/mds_backend.h`** - Backend interface for custom transports
-- **`memfault_hid/chunks_uploader.h`** - Built-in HTTP uploader
+- **`mds_bridge/memfault_hid.h`** - Device enumeration and library initialization
+- **`mds_bridge/mds_protocol.h`** - High-level MDS protocol API
+- **`mds_bridge/mds_backend.h`** - Backend interface for custom transports
+- **`mds_bridge/chunks_uploader.h`** - Built-in HTTP uploader
 
 Most applications only need `mds_protocol.h`.
 
@@ -520,4 +520,4 @@ MIT License - See LICENSE file for details
 ## Support
 
 For issues, questions, or contributions, please visit:
-https://github.com/memfault/memfault-cloud-hid
+https://github.com/memfault/mds-bridge

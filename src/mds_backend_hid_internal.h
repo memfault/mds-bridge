@@ -8,7 +8,7 @@
 #ifndef MDS_BACKEND_HID_INTERNAL_H
 #define MDS_BACKEND_HID_INTERNAL_H
 
-#include "memfault_hid/mds_backend.h"
+#include "mds_bridge/mds_backend.h"
 #include <stdint.h>
 #include <wchar.h>
 

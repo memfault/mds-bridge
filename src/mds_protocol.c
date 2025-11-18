@@ -3,8 +3,8 @@
  * @brief Implementation of Memfault Diagnostic Service (transport-agnostic)
  */
 
-#include "memfault_hid/mds_protocol.h"
-#include "memfault_hid/mds_backend.h"
+#include "mds_bridge/mds_protocol.h"
+#include "mds_bridge/mds_backend.h"
 #include "mds_backend_hid_internal.h"
 #include <stdlib.h>
 #include <string.h>

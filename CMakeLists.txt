@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(memfault_hid VERSION 2.0.0 LANGUAGES C)
+project(mds_bridge VERSION 2.0.0 LANGUAGES C)
 
 # Set C standard
 set(CMAKE_C_STANDARD 99)
@@ -26,7 +26,7 @@ find_package(hidapi REQUIRED)
 find_package(CURL REQUIRED)
 
 # Source files
-set(MEMFAULT_HID_SOURCES
+set(MDS_BRIDGE_SOURCES
     src/memfault_hid.c
     src/mds_protocol.c
     src/mds_backend_hid.c
@@ -34,17 +34,17 @@ set(MEMFAULT_HID_SOURCES
 )
 
 # Create library target
-add_library(memfault_hid ${MEMFAULT_HID_SOURCES})
+add_library(mds_bridge ${MDS_BRIDGE_SOURCES})
 
 # Set library properties
-set_target_properties(memfault_hid PROPERTIES
+set_target_properties(mds_bridge PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 2
-    PUBLIC_HEADER "include/memfault_hid/mds_protocol.h;include/memfault_hid/mds_protocol_internal.h;include/memfault_hid/mds_backend.h;include/memfault_hid/chunks_uploader.h"
+    PUBLIC_HEADER "include/mds_bridge/mds_protocol.h;include/mds_bridge/mds_protocol_internal.h;include/mds_bridge/mds_backend.h;include/mds_bridge/chunks_uploader.h"
 )
 
 # Include directories
-target_include_directories(memfault_hid
+target_include_directories(mds_bridge
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -53,20 +53,20 @@ target_include_directories(memfault_hid
 )
 
 # Link dependencies
-target_link_libraries(memfault_hid PRIVATE hidapi::hidapi CURL::libcurl)
+target_link_libraries(mds_bridge PRIVATE hidapi::hidapi CURL::libcurl)
 
 # Platform-specific libraries
 if(PLATFORM_MACOS)
-    target_link_libraries(memfault_hid PRIVATE "-framework IOKit" "-framework CoreFoundation")
+    target_link_libraries(mds_bridge PRIVATE "-framework IOKit" "-framework CoreFoundation")
 elseif(PLATFORM_WINDOWS)
-    target_link_libraries(memfault_hid PRIVATE setupapi)
+    target_link_libraries(mds_bridge PRIVATE setupapi)
 endif()
 
 # Compiler warnings
 if(MSVC)
-    target_compile_options(memfault_hid PRIVATE /W4)
+    target_compile_options(mds_bridge PRIVATE /W4)
 else()
-    target_compile_options(memfault_hid PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(mds_bridge PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 # Examples
@@ -83,42 +83,42 @@ endif()
 # Installation
 include(GNUInstallDirs)
 
-install(TARGETS memfault_hid
-    EXPORT memfault_hid-targets
+install(TARGETS mds_bridge
+    EXPORT mds_bridge-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/memfault_hid
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mds_bridge
 )
 
-install(DIRECTORY include/memfault_hid
+install(DIRECTORY include/mds_bridge
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Export targets
-install(EXPORT memfault_hid-targets
-    FILE memfault_hid-targets.cmake
+install(EXPORT mds_bridge-targets
+    FILE mds_bridge-targets.cmake
     NAMESPACE memfault::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/memfault_hid
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mds_bridge
 )
 
 # Create package config files
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/memfault_hid-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/memfault_hid-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/memfault_hid
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mds_bridge-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/mds_bridge-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mds_bridge
 )
 
 write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/memfault_hid-config-version.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/mds_bridge-config-version.cmake
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/memfault_hid-config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/memfault_hid-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/memfault_hid
+    ${CMAKE_CURRENT_BINARY_DIR}/mds_bridge-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/mds_bridge-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mds_bridge
 )

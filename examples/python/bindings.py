@@ -1,7 +1,7 @@
 """
-FFI bindings for Memfault HID library
+FFI bindings for MDS Bridge library
 
-This module provides ctypes bindings to the memfault_hid C library.
+This module provides ctypes bindings to the mds_bridge C library.
 
 It includes the public MDS API from mds_protocol.h, which provides:
 - High-level session management (mds_session_create, mds_read_device_config, etc.)
@@ -16,18 +16,18 @@ from typing import Optional
 
 # Get library path based on platform
 def get_library_path() -> str:
-    """Find the memfault_hid shared library"""
+    """Find the mds_bridge shared library"""
     current_dir = Path(__file__).parent
 
     system = platform.system()
     if system == 'Darwin':
-        lib_name = 'libmemfault_hid.dylib'
-        lib_name_versioned = 'libmemfault_hid.1.dylib'
+        lib_name = 'libmds_bridge.dylib'
+        lib_name_versioned = 'libmds_bridge.2.dylib'
     elif system == 'Linux':
-        lib_name = 'libmemfault_hid.so'
-        lib_name_versioned = 'libmemfault_hid.so.1'
+        lib_name = 'libmds_bridge.so'
+        lib_name_versioned = 'libmds_bridge.so.2'
     elif system == 'Windows':
-        lib_name = 'memfault_hid.dll'
+        lib_name = 'mds_bridge.dll'
         lib_name_versioned = None
     else:
         raise RuntimeError(f"Unsupported platform: {system}")
@@ -37,14 +37,14 @@ def get_library_path() -> str:
     build_dir = current_dir.parent.parent
     lib_path = build_dir / lib_name
     if lib_path.exists():
-        print(f"Loading Memfault HID library from: {lib_path}")
+        print(f"Loading MDS Bridge library from: {lib_path}")
         return str(lib_path)
 
     # Try versioned library
     if lib_name_versioned:
         lib_path = build_dir / lib_name_versioned
         if lib_path.exists():
-            print(f"Loading Memfault HID library from: {lib_path}")
+            print(f"Loading MDS Bridge library from: {lib_path}")
             return str(lib_path)
 
     # Strategy 2: Check if we're in examples/python (source folder)
@@ -53,13 +53,13 @@ def get_library_path() -> str:
     build_dir = root_dir / 'build'
     lib_path = build_dir / lib_name
     if lib_path.exists():
-        print(f"Loading Memfault HID library from: {lib_path}")
+        print(f"Loading MDS Bridge library from: {lib_path}")
         return str(lib_path)
 
     if lib_name_versioned:
         lib_path = build_dir / lib_name_versioned
         if lib_path.exists():
-            print(f"Loading Memfault HID library from: {lib_path}")
+            print(f"Loading MDS Bridge library from: {lib_path}")
             return str(lib_path)
 
     # Not found - provide helpful error
@@ -155,7 +155,7 @@ class mds_backend_t(ctypes.Structure):
 
 # Load the library
 _lib_path = get_library_path()
-print(f"Loading Memfault HID library from: {_lib_path}")
+print(f"Loading MDS Bridge library from: {_lib_path}")
 lib = ctypes.CDLL(_lib_path)
 
 # Callback typedefs

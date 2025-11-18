@@ -3,7 +3,7 @@
  * @brief HTTP uploader implementation using libcurl
  */
 
-#include "memfault_hid/chunks_uploader.h"
+#include "mds_bridge/chunks_uploader.h"
 #include <curl/curl.h>
 #include <stdlib.h>
 #include <string.h>

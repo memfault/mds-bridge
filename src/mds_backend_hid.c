@@ -5,7 +5,7 @@
  * This backend implements the MDS transport layer using USB HID.
  */
 
-#include "memfault_hid/mds_backend.h"
+#include "mds_bridge/mds_backend.h"
 #include "memfault_hid_internal.h"
 #include <stdlib.h>
 #include <string.h>

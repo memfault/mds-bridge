@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "memfault_hid_native",
+      "target_name": "mds_bridge_native",
       "sources": [ "src/addon.c" ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
@@ -9,7 +9,7 @@
       ],
       "libraries": [
         "-L@PROJECT_BINARY_DIR@",
-        "-lmemfault_hid"
+        "-lmds_bridge"
       ],
       "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
       "cflags!": [ "-fno-exceptions" ],

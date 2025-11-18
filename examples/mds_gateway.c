@@ -16,8 +16,8 @@
  *   ./mds_gateway 1234 5678 --dry-run    # Print chunks without uploading
  */
 
-#include "memfault_hid/mds_protocol.h"
-#include "memfault_hid/chunks_uploader.h"
+#include "mds_bridge/mds_protocol.h"
+#include "mds_bridge/chunks_uploader.h"
 
 #include <stdio.h>
 #include <stdlib.h>

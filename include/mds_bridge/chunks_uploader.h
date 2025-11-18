@@ -11,8 +11,8 @@
  * 4. Destroy when done: chunks_uploader_destroy(uploader);
  */
 
-#ifndef MEMFAULT_CHUNKS_UPLOADER_H
-#define MEMFAULT_CHUNKS_UPLOADER_H
+#ifndef MDS_BRIDGE_CHUNKS_UPLOADER_H
+#define MDS_BRIDGE_CHUNKS_UPLOADER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -141,4 +141,4 @@ int chunks_uploader_set_verbose(chunks_uploader_t *uploader,
 }
 #endif
 
-#endif /* MEMFAULT_CHUNKS_UPLOADER_H */
+#endif /* MDS_BRIDGE_CHUNKS_UPLOADER_H */

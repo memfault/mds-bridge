@@ -17,10 +17,10 @@ const __dirname = dirname(__filename);
 let native;
 try {
   // First try relative to current file (works from both root and build/)
-  native = require(join(__dirname, 'Release/memfault_hid_native.node'));
+  native = require(join(__dirname, 'Release/mds_bridge_native.node'));
 } catch (e) {
   // Fall back to build/Release (when running from root)
-  native = require('./build/Release/memfault_hid_native.node');
+  native = require('./build/Release/mds_bridge_native.node');
 }
 
 /**

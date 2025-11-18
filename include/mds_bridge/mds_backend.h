@@ -1,5 +1,5 @@
-#ifndef MEMFAULT_HID_MDS_BACKEND_H
-#define MEMFAULT_HID_MDS_BACKEND_H
+#ifndef MDS_BRIDGE_MDS_BACKEND_H
+#define MDS_BRIDGE_MDS_BACKEND_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -130,4 +130,4 @@ static inline void mds_backend_destroy(mds_backend_t *backend) {
 }
 #endif
 
-#endif /* MEMFAULT_HID_MDS_BACKEND_H */
+#endif /* MDS_BRIDGE_MDS_BACKEND_H */

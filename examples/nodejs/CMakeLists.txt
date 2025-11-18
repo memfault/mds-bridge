@@ -61,4 +61,4 @@ else()
 endif()
 
 # Make the Node.js example depend on the main library
-add_dependencies(nodejs_example memfault_hid)
+add_dependencies(nodejs_example mds_bridge)

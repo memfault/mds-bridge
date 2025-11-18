@@ -8,8 +8,8 @@
  * For the MDS protocol API, use mds_protocol.h instead.
  */
 
-#ifndef MEMFAULT_HID_H
-#define MEMFAULT_HID_H
+#ifndef MDS_BRIDGE_MEMFAULT_HID_H
+#define MDS_BRIDGE_MEMFAULT_HID_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -126,4 +126,4 @@ const char *memfault_hid_error_string(int error);
 }
 #endif
 
-#endif /* MEMFAULT_HID_H */
+#endif /* MDS_BRIDGE_MEMFAULT_HID_H */

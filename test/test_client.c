@@ -6,7 +6,7 @@
  */
 
 #include "../src/memfault_hid_internal.h"
-#include "memfault_hid/mds_protocol.h"
+#include "mds_bridge/mds_protocol.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

@@ -15,8 +15,8 @@
  * - They allow FFI code to parse packets received via callbacks/events
  */
 
-#ifndef MEMFAULT_MDS_PROTOCOL_INTERNAL_H
-#define MEMFAULT_MDS_PROTOCOL_INTERNAL_H
+#ifndef MDS_BRIDGE_MDS_PROTOCOL_INTERNAL_H
+#define MDS_BRIDGE_MDS_PROTOCOL_INTERNAL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,4 +45,4 @@ static inline uint8_t mds_extract_sequence(uint8_t byte0) {
 }
 #endif
 
-#endif /* MEMFAULT_MDS_PROTOCOL_INTERNAL_H */
+#endif /* MDS_BRIDGE_MDS_PROTOCOL_INTERNAL_H */

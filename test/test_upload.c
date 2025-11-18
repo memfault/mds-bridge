@@ -5,8 +5,8 @@
  * This tests the upload components with a mock libcurl implementation.
  */
 
-#include "memfault_hid/mds_protocol.h"
-#include "memfault_hid/chunks_uploader.h"
+#include "mds_bridge/mds_protocol.h"
+#include "mds_bridge/chunks_uploader.h"
 #include "mock_libcurl.h"
 #include <stdio.h>
 #include <string.h>

@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find HIDAPI dependency
+find_dependency(hidapi)
+
+include("${CMAKE_CURRENT_LIST_DIR}/mds_bridge-targets.cmake")
+
+check_required_components(mds_bridge)
