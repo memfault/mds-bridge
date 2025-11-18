@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <assert.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,6 +92,9 @@ struct mds_backend {
 static inline int mds_backend_read(mds_backend_t *backend, uint8_t report_id,
                                     uint8_t *buffer, size_t length,
                                     int timeout_ms) {
+    assert(backend != NULL && "backend cannot be NULL");
+    assert(backend->ops != NULL && "backend->ops cannot be NULL");
+    assert(backend->ops->read != NULL && "backend->ops->read cannot be NULL");
     return backend->ops->read(backend->impl_data, report_id, buffer, length, timeout_ms);
 }
 
@@ -105,6 +109,9 @@ static inline int mds_backend_read(mds_backend_t *backend, uint8_t report_id,
  */
 static inline int mds_backend_write(mds_backend_t *backend, uint8_t report_id,
                                      const uint8_t *buffer, size_t length) {
+    assert(backend != NULL && "backend cannot be NULL");
+    assert(backend->ops != NULL && "backend->ops cannot be NULL");
+    assert(backend->ops->write != NULL && "backend->ops->write cannot be NULL");
     return backend->ops->write(backend->impl_data, report_id, buffer, length);
 }
 

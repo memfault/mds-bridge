@@ -70,9 +70,11 @@ static int mds_parse_stream_packet(const uint8_t *buffer, size_t buffer_len,
  * ========================================================================== */
 
 int mds_session_create(mds_backend_t *backend, mds_session_t **session) {
-    if (backend == NULL || session == NULL) {
+    if (session == NULL) {
         return -EINVAL;
     }
+
+    // Note: backend can be NULL for external I/O (e.g., event-driven with mds_process_stream_from_bytes)
 
     mds_session_t *s = calloc(1, sizeof(mds_session_t));
     if (s == NULL) {

@@ -297,17 +297,19 @@ class MDSClient:
         return self.config
 
     def destroy(self) -> None:
-        """Clean up resources"""
-        if self.streaming:
-            try:
-                self.disable_streaming()
-            except Exception as e:
-                print(f"Error disabling streaming: {e}")
+        """
+        Clean up resources
 
+        Note: mds_session_destroy() will automatically disable streaming
+        if it's enabled, so we don't need to call disable_streaming() manually.
+        """
         if self.session:
+            # This will automatically disable streaming if enabled
             lib.mds_session_destroy(self.session)
             self.session = None
 
         if self.backend:
             self.backend.destroy()
             self.backend = None
+
+        self.streaming = False

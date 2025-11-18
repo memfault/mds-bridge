@@ -198,19 +198,22 @@ class Application:
             print("\nReceived interrupt signal...")
 
     def stop(self) -> None:
-        """Stop the application"""
+        """Stop the application (idempotent - safe to call multiple times)"""
+        if not self.running and not self.mds_client and not self.device:
+            return  # Already stopped
+
         print("\nStopping application...")
         self.running = False
 
+        # Clean up MDS client (this will automatically disable streaming)
         if self.mds_client:
-            try:
-                self.mds_client.disable_streaming()
-            except Exception as e:
-                print(f"Error disabling streaming: {e}")
             self.mds_client.destroy()
+            self.mds_client = None
 
+        # Close HID device
         if self.device:
             self.device.close()
+            self.device = None
 
         print("Application stopped.")
         print(f"\nFinal stats:")
