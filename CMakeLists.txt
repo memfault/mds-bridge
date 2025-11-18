@@ -40,7 +40,7 @@ add_library(mds_bridge ${MDS_BRIDGE_SOURCES})
 set_target_properties(mds_bridge PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 2
-    PUBLIC_HEADER "include/mds_bridge/mds_protocol.h;include/mds_bridge/mds_protocol_internal.h;include/mds_bridge/mds_backend.h;include/mds_bridge/chunks_uploader.h"
+    PUBLIC_HEADER "include/mds_bridge/mds_protocol.h;include/mds_bridge/mds_backend.h;include/mds_bridge/chunks_uploader.h;include/mds_bridge/memfault_hid.h"
 )
 
 # Include directories

@@ -233,8 +233,3 @@ lib.mds_process_stream_from_bytes.argtypes = [
 ]
 lib.mds_process_stream_from_bytes.restype = ctypes.c_int
 
-# Helper functions
-
-def mds_extract_sequence(byte0: int) -> int:
-    """Extract sequence number from first byte of stream packet"""
-    return byte0 & MDS_SEQUENCE_MASK
