@@ -101,10 +101,6 @@ class Application:
         self.device: Optional[hid.device] = None
         self.mds_client: Optional[MDSClient] = None
         self.running = False
-        self.stats = {
-            'chunks_received': 0,
-            'chunks_uploaded': 0,
-        }
 
     def open_device(self) -> None:
         """Find and open the HID device"""
@@ -205,6 +201,14 @@ class Application:
         print("\nStopping application...")
         self.running = False
 
+        # Print stats before cleanup
+        if self.mds_client:
+            print(f"\nFinal stats:")
+            print(f"  Chunks received: {self.mds_client.stats['chunks_received']}")
+            print(f"  Chunks uploaded: {self.mds_client.stats['chunks_uploaded']}")
+            if self.mds_client.stats['upload_errors'] > 0:
+                print(f"  Upload errors: {self.mds_client.stats['upload_errors']}")
+
         # Clean up MDS client (this will automatically disable streaming)
         if self.mds_client:
             self.mds_client.destroy()
@@ -216,9 +220,6 @@ class Application:
             self.device = None
 
         print("Application stopped.")
-        print(f"\nFinal stats:")
-        print(f"  Chunks received: {self.stats['chunks_received']}")
-        print(f"  Chunks uploaded: {self.stats['chunks_uploaded']}")
 
 
 def main():

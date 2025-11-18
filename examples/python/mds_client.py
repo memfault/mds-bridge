@@ -67,8 +67,6 @@ class MDSClient:
 
     def initialize(self) -> None:
         """Initialize the MDS session with custom backend"""
-        print("[MDSClient] Creating HID backend...")
-
         # Create custom backend using hidapi
         self.backend = HIDBackend(self.device)
 
@@ -83,7 +81,6 @@ class MDSClient:
             raise RuntimeError(f"Failed to create MDS session: {result}")
 
         self.session = session_ptr
-        print("[MDSClient] MDS session created successfully")
 
         # Read device configuration using high-level API
         self.read_device_config()
@@ -100,8 +97,6 @@ class MDSClient:
         Returns:
             DeviceConfig instance
         """
-        print("[MDSClient] Reading device configuration...")
-
         # Use high-level API - the C library will call our backend for HID operations
         config = mds_device_config_t()
         result = lib.mds_read_device_config(self.session, ctypes.byref(config))
@@ -118,18 +113,10 @@ class MDSClient:
             authorization=config.authorization.decode('utf-8').rstrip('\x00'),
         )
 
-        print("[MDSClient] Device configuration:")
-        print(f"  Device ID: {self.config.device_identifier}")
-        print(f"  Data URI: {self.config.data_uri}")
-        print(f"  Auth: {self.config.authorization}")
-        print(f"  Features: 0x{self.config.supported_features:08x}")
-
         return self.config
 
     def enable_streaming(self) -> None:
         """Enable diagnostic data streaming using high-level API"""
-        print("[MDSClient] Enabling streaming...")
-
         # Use high-level API - no need to manually build control packets
         result = lib.mds_stream_enable(self.session)
 
@@ -137,19 +124,15 @@ class MDSClient:
             raise RuntimeError(f"Failed to enable streaming: {result}")
 
         self.streaming = True
-        print("[MDSClient] Streaming enabled")
 
     def disable_streaming(self) -> None:
         """Disable diagnostic data streaming using high-level API"""
-        print("[MDSClient] Disabling streaming...")
-
         result = lib.mds_stream_disable(self.session)
 
         if result < 0:
             raise RuntimeError(f"Failed to disable streaming: {result}")
 
         self.streaming = False
-        print("[MDSClient] Streaming disabled")
 
     def enable_upload(self, upload_enabled: bool = True) -> None:
         """
@@ -162,8 +145,6 @@ class MDSClient:
             upload_enabled: True to enable upload, False to disable
         """
         if upload_enabled:
-            print("[MDSClient] Registering upload callback...")
-
             # Create C callback function
             @MDS_CHUNK_UPLOAD_CALLBACK
             def upload_callback_impl(uri, auth_header, chunk_data, chunk_len, user_data):
@@ -193,17 +174,17 @@ class MDSClient:
                     response.raise_for_status()
 
                     self.stats['chunks_uploaded'] += 1
-                    print(f"[MDSClient] Chunk uploaded: {chunk_len} bytes "
+                    print(f"Chunk uploaded: {chunk_len} bytes "
                           f"({self.stats['chunks_uploaded']}/{self.stats['chunks_received']})")
                     return 0
 
                 except requests.RequestException as e:
                     self.stats['upload_errors'] += 1
-                    print(f"[MDSClient] Failed to upload chunk: {e}")
+                    print(f"Failed to upload chunk: {e}")
                     return -5  # -EIO
                 except Exception as e:
                     self.stats['upload_errors'] += 1
-                    print(f"[MDSClient] Unexpected error in upload callback: {e}")
+                    print(f"Unexpected error in upload callback: {e}")
                     return -5  # -EIO
 
             # Store callback to prevent garbage collection
@@ -213,8 +194,6 @@ class MDSClient:
             result = lib.mds_set_upload_callback(self.session, self.upload_callback, None)
             if result < 0:
                 raise RuntimeError(f"Failed to register upload callback: {result}")
-
-            print("[MDSClient] Upload callback registered")
         else:
             # Unregister callback
             result = lib.mds_set_upload_callback(self.session, None, None)
@@ -222,7 +201,6 @@ class MDSClient:
                 raise RuntimeError(f"Failed to unregister upload callback: {result}")
 
             self.upload_callback = None
-            print("[MDSClient] Upload callback unregistered")
 
     def process(self, data: bytes) -> bool:
         """

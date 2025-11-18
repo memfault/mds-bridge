@@ -63,7 +63,7 @@ class HIDBackend:
         # Create destroy callback (no-op for Python backend)
         @BACKEND_DESTROY_FN
         def destroy_callback(impl_data):
-            print("Backend destroy called (no-op for Python backend)")
+            pass  # No-op for Python backend
 
         # Create ops structure
         self.ops = mds_backend_ops_t()
@@ -92,8 +92,6 @@ class HIDBackend:
         Returns:
             Number of bytes read or negative error code
         """
-        print(f"[HID Backend] READ request: report_id=0x{report_id:02x}, length={length}, timeout={timeout_ms}ms")
-
         # Determine if this is a feature report (0x01-0x05) or input report (0x06)
         if (report_id >= MDS_REPORT_ID.SUPPORTED_FEATURES and
             report_id <= MDS_REPORT_ID.STREAM_CONTROL):
@@ -101,7 +99,6 @@ class HIDBackend:
             data = self.device.get_feature_report(report_id, length + 1)  # +1 for report ID
 
             if not data or len(data) < 2:
-                print("[HID Backend] Failed to read feature report")
                 return -5  # -EIO
 
             # Copy data to C buffer (skip report ID byte)
@@ -111,18 +108,15 @@ class HIDBackend:
             for i in range(bytes_to_copy):
                 buffer[i] = data_without_report_id[i]
 
-            print(f"[HID Backend] Feature report read: {bytes_to_copy} bytes")
             return bytes_to_copy
 
         elif report_id == MDS_REPORT_ID.STREAM_DATA:
             # Input report - this should be handled via the read() in the application
             # For blocking reads, we would need to implement a queue
             # For now, return EAGAIN (would block)
-            print("[HID Backend] Input report read requested (use event-based approach)")
             return -11  # -EAGAIN
 
         else:
-            print(f"[HID Backend] Unknown report ID: 0x{report_id:02x}")
             return -22  # -EINVAL
 
     def _handle_write(self, report_id: int, buffer, length: int) -> int:
@@ -137,8 +131,6 @@ class HIDBackend:
         Returns:
             Number of bytes written or negative error code
         """
-        print(f"[HID Backend] WRITE request: report_id=0x{report_id:02x}, length={length}")
-
         # All write operations in MDS use SET_FEATURE (Report ID 0x05 - stream control)
         if report_id == MDS_REPORT_ID.STREAM_CONTROL:
             try:
@@ -149,13 +141,10 @@ class HIDBackend:
                 report = bytes([report_id]) + data
                 bytes_written = self.device.send_feature_report(list(report))
 
-                print(f"[HID Backend] Feature report written: {length} bytes")
                 return length
             except Exception as e:
-                print(f"[HID Backend] Write failed: {e}")
                 return -5  # -EIO
         else:
-            print(f"[HID Backend] Unsupported write to report ID: 0x{report_id:02x}")
             return -22  # -EINVAL
 
     def get_backend_ref(self):

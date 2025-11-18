@@ -36,8 +36,6 @@ export class MDSClient {
   }
 
   async initialize() {
-    console.log('[MDSClient] Initializing with native protocol...');
-
     // Create native session with backend
     this.session = native.createSession();
 
@@ -46,8 +44,6 @@ export class MDSClient {
   }
 
   async readDeviceConfig() {
-    console.log('[MDSClient] Reading device configuration...');
-
     // Read all config feature reports and parse them directly
     const features = this._readFeatureReport(native.MDS_REPORT_ID.SUPPORTED_FEATURES, 4);
     const deviceId = this._readFeatureReport(native.MDS_REPORT_ID.DEVICE_IDENTIFIER, 64);
@@ -62,18 +58,10 @@ export class MDSClient {
       authorization: this._readNullTermString(auth),
     };
 
-    console.log('[MDSClient] Device configuration:');
-    console.log(`  Device ID: ${this.config.deviceIdentifier}`);
-    console.log(`  Data URI: ${this.config.dataUri}`);
-    console.log(`  Auth: ${this.config.authorization}`);
-    console.log(`  Features: 0x${this.config.supportedFeatures.toString(16)}`);
-
     return this.config;
   }
 
   async enableStreaming() {
-    console.log('[MDSClient] Enabling streaming...');
-
     // Stream enable packet: [0x01] (1 byte)
     const packet = Buffer.from([0x01]);
 
@@ -82,15 +70,12 @@ export class MDSClient {
 
     this.streaming = true;
     this.lastSequence = null;
-    console.log('[MDSClient] Streaming enabled');
   }
 
   async disableStreaming() {
     if (!this.streaming) {
       return; // Already disabled
     }
-
-    console.log('[MDSClient] Disabling streaming...');
 
     try {
       // Stream disable packet: [0x00] (1 byte)
@@ -100,10 +85,8 @@ export class MDSClient {
       this._writeFeatureReport(native.MDS_REPORT_ID.STREAM_CONTROL, packet);
 
       this.streaming = false;
-      console.log('[MDSClient] Streaming disabled');
     } catch (error) {
       // Device might already be disconnected during shutdown
-      console.log('[MDSClient] Could not disable streaming (device may be disconnected)');
       this.streaming = false;
     }
   }
@@ -150,14 +133,12 @@ export class MDSClient {
       // Pass session, config, and buffer
       const packet = native.processStreamFromBytes(this.session, this.config, payload);
 
-      console.log(`[MDSClient] Received chunk: seq=${packet.sequence}, len=${packet.length}`);
-
       // Trigger callback if registered
       if (this.onChunk) {
         this.onChunk(packet);
       }
     } catch (error) {
-      console.error(`[MDSClient] Failed to process stream packet:`, error);
+      console.error(`Failed to process stream packet:`, error);
     }
   }
 
@@ -187,10 +168,10 @@ export class MDSClient {
         throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
-      console.log(`[MDSClient] Chunk uploaded: ${chunkData.length} bytes`);
+      console.log(`Chunk uploaded: ${chunkData.length} bytes`);
       return true;
     } catch (error) {
-      console.error('[MDSClient] Failed to upload chunk:', error);
+      console.error('Failed to upload chunk:', error);
       return false;
     }
   }
