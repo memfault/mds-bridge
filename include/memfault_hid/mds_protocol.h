@@ -355,6 +355,78 @@ int mds_stream_read_packet(mds_session_t *session,
                            mds_stream_packet_t *packet,
                            int timeout_ms);
 
+/**
+ * @brief Parse a stream data packet from a buffer
+ *
+ * For event-driven or non-blocking I/O patterns, use this to parse stream
+ * packets received directly from the transport layer. This is useful when
+ * you're handling HID input reports via callbacks or events.
+ *
+ * The buffer should contain only the stream packet payload (after the channel
+ * ID / report ID byte has been stripped).
+ *
+ * @param buffer Buffer containing stream packet (sequence byte + data)
+ * @param buffer_len Length of buffer
+ * @param packet Pointer to receive parsed packet
+ *
+ * @return 0 on success, negative error code otherwise
+ *
+ * Example:
+ * @code
+ * // HID input report callback
+ * void on_hid_data(uint8_t *report, size_t len) {
+ *     if (report[0] == MDS_REPORT_ID_STREAM_DATA) {
+ *         mds_stream_packet_t packet;
+ *         int ret = mds_parse_stream_packet(&report[1], len - 1, &packet);
+ *         if (ret == 0) {
+ *             // Use packet.sequence, packet.data, packet.data_len
+ *         }
+ *     }
+ * }
+ * @endcode
+ */
+int mds_parse_stream_packet(const uint8_t *buffer,
+                            size_t buffer_len,
+                            mds_stream_packet_t *packet);
+
+/**
+ * @brief Validate stream packet sequence number
+ *
+ * Checks if the new sequence number is the expected next value after the
+ * previous sequence. Sequence numbers are 5-bit values (0-31) that wrap around.
+ *
+ * @param prev_seq Previous sequence number
+ * @param new_seq New sequence number to validate
+ *
+ * @return true if sequence is valid (new_seq == prev_seq + 1, with wraparound)
+ *         false if there's a gap or duplicate
+ */
+bool mds_validate_sequence(uint8_t prev_seq, uint8_t new_seq);
+
+/**
+ * @brief Get last received sequence number
+ *
+ * Returns the sequence number of the last successfully received packet.
+ * Useful for validating sequences when parsing packets manually.
+ *
+ * @param session MDS session handle
+ *
+ * @return Last sequence number, or MDS_SEQUENCE_MAX if no packets received yet
+ */
+uint8_t mds_get_last_sequence(mds_session_t *session);
+
+/**
+ * @brief Update last received sequence number
+ *
+ * Updates the session's tracking of the last received sequence number.
+ * Call this after successfully processing a packet parsed with
+ * mds_parse_stream_packet().
+ *
+ * @param session MDS session handle
+ * @param sequence New sequence number to record
+ */
+void mds_update_last_sequence(mds_session_t *session, uint8_t sequence);
+
 /* ============================================================================
  * Chunk Upload
  * ========================================================================== */

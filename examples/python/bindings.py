@@ -3,11 +3,9 @@ FFI bindings for Memfault HID library
 
 This module provides ctypes bindings to the memfault_hid C library.
 
-It includes both:
-- Public high-level MDS API (from mds_protocol.h)
-- Internal buffer-based parsing API (from mds_protocol_internal.h)
-
-The internal APIs are used for event-driven I/O integration with hidapi.
+It includes the public MDS API from mds_protocol.h, which provides both:
+- High-level session management (mds_session_create, mds_read_device_config, etc.)
+- Buffer-based parsing for event-driven I/O (mds_parse_stream_packet, etc.)
 """
 
 import ctypes

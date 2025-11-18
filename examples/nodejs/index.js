@@ -16,19 +16,19 @@
  * - Demonstrates how to create custom backends for other transports (Serial, BLE, etc.)
  *
  * Usage:
- *   node index.js                    # Use default VID/PID
- *   node index.js <vid> <pid>        # Specify VID/PID in hex
+ *   node index.js                    # Use default VID/PID, upload enabled
+ *   node index.js <vid> <pid>        # Specify VID/PID in hex, upload enabled
  *   node index.js 0x1234 0x5678
  *   node index.js 1234 5678 --no-upload  # Disable cloud uploads
  */
 
 import HID from 'node-hid';
-import { MDSClient } from './mds-client.js';
+import { MDSClient } from './mds-native.js';
 
 // Configuration - Default values, can be overridden via CLI
 let VENDOR_ID = 0x1234;   // Replace with your device's VID
 let PRODUCT_ID = 0x5678;   // Replace with your device's PID
-let UPLOAD_TO_CLOUD = false; // Set to true to upload chunks to Memfault
+let UPLOAD_TO_CLOUD = true; // Upload chunks to Memfault by default
 
 /**
  * Parse command line arguments
@@ -46,11 +46,11 @@ Usage:
 Arguments:
   vid         USB Vendor ID (hex, with or without 0x prefix)
   pid         USB Product ID (hex, with or without 0x prefix)
-  --no-upload Disable chunk uploads to Memfault cloud
+  --no-upload Disable chunk uploads to Memfault cloud (enabled by default)
 
 Examples:
-  node index.js                    # Use default VID/PID
-  node index.js 1234 5678          # VID=0x1234, PID=0x5678
+  node index.js                    # Use default VID/PID, upload enabled
+  node index.js 1234 5678          # VID=0x1234, PID=0x5678, upload enabled
   node index.js 0x1234 0x5678      # Same with 0x prefix
   node index.js 1234 5678 --no-upload  # Disable uploads
 `);
@@ -164,7 +164,7 @@ async function main() {
           console.log(`  ✗ Upload failed`);
         }
       } else {
-        console.log(`  (Upload disabled - set UPLOAD_TO_CLOUD=true to enable)`);
+        console.log(`  (Upload disabled - use without --no-upload flag to enable)`);
       }
     });
 
@@ -199,12 +199,20 @@ async function main() {
       console.log('\n\nShutting down...');
       clearInterval(statsInterval);
 
-      console.log('Disabling streaming...');
-      await mdsClient.disableStreaming();
+      try {
+        console.log('Disabling streaming...');
+        await mdsClient.disableStreaming();
+      } catch (error) {
+        console.log('Note: Could not disable streaming:', error.message);
+      }
 
-      console.log('Cleaning up...');
-      mdsClient.destroy();
-      device.close();
+      try {
+        console.log('Cleaning up...');
+        mdsClient.destroy();
+        device.close();
+      } catch (error) {
+        console.log('Note: Error during cleanup:', error.message);
+      }
 
       printStatistics();
       console.log('\n✓ Shutdown complete');

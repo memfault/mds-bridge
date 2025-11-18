@@ -52,38 +52,8 @@ configure_file(
     COPYONLY
 )
 
-# Node.js Example - Copy to build directory
-set(NODEJS_EXAMPLE_DIR ${CMAKE_BINARY_DIR}/examples/nodejs)
-file(MAKE_DIRECTORY ${NODEJS_EXAMPLE_DIR})
-
-# Copy Node.js files
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/index.js
-    ${NODEJS_EXAMPLE_DIR}/index.js
-    COPYONLY
-)
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/mds-client.js
-    ${NODEJS_EXAMPLE_DIR}/mds-client.js
-    COPYONLY
-)
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/node-hid-backend.js
-    ${NODEJS_EXAMPLE_DIR}/node-hid-backend.js
-    COPYONLY
-)
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/package.json
-    ${NODEJS_EXAMPLE_DIR}/package.json
-    COPYONLY
-)
-
-# For Node.js, just copy bindings.js - it already has logic to find the library
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/bindings.js
-    ${NODEJS_EXAMPLE_DIR}/bindings.js
-    COPYONLY
-)
+# Node.js Example - Build with N-API addon
+add_subdirectory(nodejs)
 
 # Print helpful message
 add_custom_target(copy_examples ALL
