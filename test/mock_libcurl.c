@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 /* Mock state */
 typedef struct {

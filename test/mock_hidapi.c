@@ -12,6 +12,7 @@
 #include <wchar.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /* Mock device configuration */
 #define MOCK_VID 0x1234
