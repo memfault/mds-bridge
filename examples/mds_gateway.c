@@ -70,20 +70,23 @@ int main(int argc, char *argv[]) {
     mds_device_config_t config;
     chunks_uploader_t *uploader = NULL;
     bool dry_run = false;
+    bool verbose = false;
     int dry_run_chunk_count = 0;
 
     /* Parse arguments */
     if (argc < 3) {
-        fprintf(stderr, "Usage: %s <vid> <pid> [--dry-run]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <vid> <pid> [--dry-run] [--verbose]\n", argv[0]);
         fprintf(stderr, "\n");
         fprintf(stderr, "Arguments:\n");
         fprintf(stderr, "  vid        Vendor ID (hex, e.g., 2fe3)\n");
         fprintf(stderr, "  pid        Product ID (hex, e.g., 0007)\n");
         fprintf(stderr, "  --dry-run  Print chunks without uploading to Memfault cloud\n");
+        fprintf(stderr, "  --verbose  Enable verbose HTTP output (curl details)\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Examples:\n");
         fprintf(stderr, "  %s 2fe3 0007            # Upload to Memfault cloud\n", argv[0]);
         fprintf(stderr, "  %s 2fe3 0007 --dry-run  # Print only, no upload\n", argv[0]);
+        fprintf(stderr, "  %s 2fe3 0007 --verbose  # Upload with detailed HTTP logging\n", argv[0]);
         fprintf(stderr, "\n");
         return 1;
     }
@@ -93,10 +96,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    /* Check for dry-run flag */
-    if (argc >= 4 && strcmp(argv[3], "--dry-run") == 0) {
-        dry_run = true;
-        printf("DRY RUN mode - chunks will be printed but NOT uploaded\n\n");
+    /* Check for optional flags */
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "--dry-run") == 0) {
+            dry_run = true;
+            printf("DRY RUN mode - chunks will be printed but NOT uploaded\n\n");
+        } else if (strcmp(argv[i], "--verbose") == 0) {
+            verbose = true;
+            printf("Verbose mode enabled\n\n");
+        }
     }
 
     /* Set up signal handler for graceful shutdown */
@@ -148,8 +156,8 @@ int main(int argc, char *argv[]) {
             goto cleanup;
         }
 
-        /* Enable verbose output */
-        chunks_uploader_set_verbose(uploader, true);
+        /* Enable verbose output if requested */
+        chunks_uploader_set_verbose(uploader, verbose);
 
         /* Register the uploader callback */
         ret = mds_set_upload_callback(session, chunks_uploader_callback, uploader);
