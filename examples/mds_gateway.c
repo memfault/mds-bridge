@@ -218,11 +218,68 @@ int main(int argc, char *argv[]) {
 
     int chunk_count = 0;
     int error_count = 0;
+    int consecutive_io_errors = 0;
     uint8_t expected_seq = 0;  /* Track expected sequence for gap detection */
     bool first_packet = true;
     int dropped_packets = 0;
 
     while (keep_running) {
+        /* Check for device disconnection (consecutive I/O errors) */
+        if (consecutive_io_errors >= 3) {
+            printf("\nDevice disconnected (consecutive I/O errors)\n");
+            printf("Waiting for device to reconnect...\n");
+
+            /* Clean up current session */
+            mds_session_destroy(session);
+            session = NULL;
+
+            /* Wait for device to reappear */
+            while (keep_running) {
+                #ifdef _WIN32
+                Sleep(1000);
+                #else
+                usleep(1000000);  /* 1 second */
+                #endif
+
+                ret = mds_session_create_hid(vid, pid, NULL, &session);
+                if (ret == 0) {
+                    printf("Device reconnected!\n");
+
+                    /* Re-read config and re-enable streaming */
+                    ret = mds_read_device_config(session, &config);
+                    if (ret != 0) {
+                        fprintf(stderr, "Failed to read device config after reconnect\n");
+                        mds_session_destroy(session);
+                        session = NULL;
+                        continue;
+                    }
+
+                    /* Re-register upload callback */
+                    if (!dry_run && uploader) {
+                        mds_set_upload_callback(session, chunks_uploader_callback, uploader);
+                    } else if (dry_run) {
+                        mds_set_upload_callback(session, dry_run_callback, &dry_run_chunk_count);
+                    }
+
+                    ret = mds_stream_enable(session);
+                    if (ret != 0) {
+                        fprintf(stderr, "Failed to enable streaming after reconnect\n");
+                        mds_session_destroy(session);
+                        session = NULL;
+                        continue;
+                    }
+
+                    printf("Streaming re-enabled, resuming...\n\n");
+                    consecutive_io_errors = 0;
+                    first_packet = true;
+                    break;
+                }
+            }
+
+            if (!keep_running || session == NULL) {
+                break;
+            }
+        }
         /* Phase 1: Drain all available HID packets into buffer (short timeout) */
         size_t buffered_count = 0;
         while (buffered_count < CHUNK_BUFFER_SIZE) {
@@ -231,6 +288,9 @@ int main(int argc, char *argv[]) {
             ret = mds_stream_read_packet(session, &packet, 10);
 
             if (ret == 0) {
+                /* Success - reset I/O error counter */
+                consecutive_io_errors = 0;
+
                 /* Check for sequence gaps (dropped packets) */
                 if (first_packet) {
                     expected_seq = packet.sequence;
@@ -256,10 +316,14 @@ int main(int argc, char *argv[]) {
                 memcpy(chunk_buffer[buffered_count].data, packet.data, packet.data_len);
                 buffered_count++;
             } else if (ret == -ETIMEDOUT || ret == MEMFAULT_HID_ERROR_TIMEOUT) {
-                /* No more packets available */
+                /* No more packets available - this is normal */
                 break;
             } else {
-                /* Other error */
+                /* I/O error - possible disconnection */
+                consecutive_io_errors++;
+                if (consecutive_io_errors == 1) {
+                    fprintf(stderr, "I/O error reading from device (error %d)\n", ret);
+                }
                 break;
             }
         }
@@ -310,9 +374,11 @@ int main(int argc, char *argv[]) {
 
     printf("\nShutting down...\n");
 
-    /* Disable streaming */
-    printf("Disabling streaming...\n");
-    mds_stream_disable(session);
+    /* Disable streaming (if session still valid) */
+    if (session) {
+        printf("Disabling streaming...\n");
+        mds_stream_disable(session);
+    }
 
 cleanup:
     /* Print final statistics */
