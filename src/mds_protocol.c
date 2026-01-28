@@ -320,6 +320,10 @@ int mds_stream_enable(mds_session_t *session) {
     }
 
     session->streaming_enabled = true;
+
+    /* Reset sequence tracking so first packet is accepted without error */
+    session->last_sequence = MDS_SEQUENCE_MAX;
+
     return 0;
 }
 
