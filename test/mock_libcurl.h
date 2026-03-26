@@ -49,6 +49,27 @@ const char* mock_curl_get_last_url(void);
  */
 const uint8_t* mock_curl_get_last_data(size_t *len);
 
+/**
+ * @brief Get the last POST body captured during curl_easy_perform
+ *
+ * Returns the POST body data that was set via CURLOPT_POSTFIELDS and
+ * captured when curl_easy_perform was called.
+ *
+ * @param len Pointer to receive body length
+ * @return Pointer to last POST body data
+ */
+const uint8_t* mock_curl_get_last_post_body(size_t *len);
+
+/**
+ * @brief Get the last HTTP headers that were set
+ *
+ * Returns a semicolon-delimited string of all headers set via
+ * CURLOPT_HTTPHEADER during the last request.
+ *
+ * @return Semicolon-delimited header string
+ */
+const char* mock_curl_get_last_headers(void);
+
 #ifdef __cplusplus
 }
 #endif

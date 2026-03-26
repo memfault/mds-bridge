@@ -24,8 +24,10 @@
 typedef struct {
     char last_url[512];
     char last_headers[1024];
-    uint8_t last_data[512];
+    uint8_t last_data[8192];
     size_t last_data_len;
+    const void *pending_post_data;
+    long pending_post_size;
     long response_code;
     CURLcode error_code;
     int request_count;
@@ -39,6 +41,8 @@ void mock_curl_reset(void) {
     memset(&mock_state, 0, sizeof(mock_state));
     mock_state.response_code = 200;  /* Default to success */
     mock_state.error_code = CURLE_OK;
+    mock_state.pending_post_data = NULL;
+    mock_state.pending_post_size = 0;
 }
 
 /* Set mock response */
@@ -59,6 +63,15 @@ const char* mock_curl_get_last_url(void) {
 const uint8_t* mock_curl_get_last_data(size_t *len) {
     *len = mock_state.last_data_len;
     return mock_state.last_data;
+}
+
+const uint8_t* mock_curl_get_last_post_body(size_t *len) {
+    *len = mock_state.last_data_len;
+    return mock_state.last_data;
+}
+
+const char* mock_curl_get_last_headers(void) {
+    return mock_state.last_headers;
 }
 
 /* ============================================================================
@@ -114,7 +127,8 @@ CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...) {
             if (mock_state.verbose) {
                 printf("[MOCK CURL] curl_easy_setopt(CURLOPT_POSTFIELDS, %p)\n", data);
             }
-            /* Store pointer but don't copy yet - wait for POSTFIELDSIZE */
+            /* Store pointer - will be copied in curl_easy_perform */
+            mock_state.pending_post_data = data;
             break;
         }
         case CURLOPT_POSTFIELDSIZE: {
@@ -122,8 +136,7 @@ CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...) {
             if (mock_state.verbose) {
                 printf("[MOCK CURL] curl_easy_setopt(CURLOPT_POSTFIELDSIZE, %ld)\n", size);
             }
-            /* Note: In real usage, POSTFIELDS is set before POSTFIELDSIZE */
-            /* We'll capture the data in curl_easy_perform */
+            mock_state.pending_post_size = size;
             break;
         }
         case CURLOPT_HTTPHEADER: {
@@ -167,15 +180,6 @@ CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...) {
     return CURLE_OK;
 }
 
-/* Note: This is a simplified mock - in reality we'd need to track the POST data pointer */
-static const void *g_last_post_data = NULL;
-static long g_last_post_size = 0;
-
-CURLcode curl_easy_setopt_data(CURL *curl, const void *data, long size) {
-    g_last_post_data = data;
-    g_last_post_size = size;
-    return CURLE_OK;
-}
 
 CURLcode curl_easy_perform(CURL *curl) {
     mock_state.request_count++;
@@ -184,8 +188,17 @@ CURLcode curl_easy_perform(CURL *curl) {
     printf("[MOCK CURL]   URL: %s\n", mock_state.last_url);
     printf("[MOCK CURL]   HTTP Code: %ld\n", mock_state.response_code);
 
-    /* In a real implementation, we'd parse and execute the request */
-    /* For the mock, we just return the pre-configured response */
+    /* Capture pending POST data into last_data buffer */
+    if (mock_state.pending_post_data != NULL && mock_state.pending_post_size > 0) {
+        size_t copy_size = (size_t)mock_state.pending_post_size;
+        if (copy_size > sizeof(mock_state.last_data)) {
+            copy_size = sizeof(mock_state.last_data);
+        }
+        memcpy(mock_state.last_data, mock_state.pending_post_data, copy_size);
+        mock_state.last_data_len = copy_size;
+        mock_state.pending_post_data = NULL;
+        mock_state.pending_post_size = 0;
+    }
 
     (void)curl;
     return mock_state.error_code;
