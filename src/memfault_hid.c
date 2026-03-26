@@ -8,6 +8,10 @@
 #include <string.h>
 #include <hidapi.h>
 
+#if defined(__APPLE__) && !defined(MOCK_HIDAPI)
+#include <hidapi_darwin.h>
+#endif
+
 /* Device structure */
 struct memfault_hid_device {
     hid_device *handle;
@@ -31,6 +35,12 @@ int memfault_hid_init(void) {
     if (hid_init() != 0) {
         return MEMFAULT_HID_ERROR_UNKNOWN;
     }
+
+#if defined(__APPLE__) && !defined(MOCK_HIDAPI)
+    /* On macOS, IOHIDSystem opens HID devices exclusively by default.
+     * We must use non-exclusive mode to coexist with the system. */
+    hid_darwin_set_open_exclusive(0);
+#endif
 
     g_initialized = true;
     return MEMFAULT_HID_SUCCESS;

@@ -25,6 +25,9 @@ target_include_directories(test_hid PRIVATE
     ${HIDAPI_INCLUDE_DIR}
 )
 
+# Define MOCK_HIDAPI to skip darwin-specific hidapi calls
+target_compile_definitions(test_hid PRIVATE MOCK_HIDAPI)
+
 # The mock provides hidapi symbols, so no need to link real hidapi
 # But we still need platform-specific libraries if on macOS
 if(APPLE)
@@ -84,6 +87,9 @@ target_include_directories(test_mds_e2e PRIVATE
     ${CURL_INCLUDE_DIRS}
 )
 
+# Define MOCK_HIDAPI to skip darwin-specific hidapi calls
+target_compile_definitions(test_mds_e2e PRIVATE MOCK_HIDAPI)
+
 # Platform-specific libraries for macOS
 if(APPLE)
     target_link_libraries(test_mds_e2e PRIVATE
@@ -95,12 +101,58 @@ endif()
 # Add to CTest
 add_test(NAME MDS_E2E_Test COMMAND test_mds_e2e)
 
+# ============================================================================
+# Test Suite 4: Parse Packet Tests (tests stream packet parser)
+# ============================================================================
+
+add_executable(test_parse_packet
+    test_parse_packet.c
+    stub_hidapi.c
+    ${CMAKE_SOURCE_DIR}/src/mds_protocol.c
+    ${CMAKE_SOURCE_DIR}/src/mds_backend_hid.c
+)
+
+# Include directories for parse packet tests
+target_include_directories(test_parse_packet PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+# Add to CTest
+add_test(NAME Parse_Packet_Tests COMMAND test_parse_packet)
+
+# ============================================================================
+# Test Suite 5: Batch Upload Tests (tests multipart/mixed batch upload)
+# ============================================================================
+
+add_executable(test_batch_upload
+    test_batch_upload.c
+    mock_libcurl.c
+    stub_hidapi.c
+    ${CMAKE_SOURCE_DIR}/src/chunks_uploader.c
+    ${CMAKE_SOURCE_DIR}/src/mds_protocol.c
+    ${CMAKE_SOURCE_DIR}/src/mds_backend_hid.c
+)
+
+# Include directories for batch upload tests
+target_include_directories(test_batch_upload PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/test
+    ${CURL_INCLUDE_DIRS}
+)
+
+# Add to CTest
+add_test(NAME Batch_Upload_Tests COMMAND test_batch_upload)
+
 # Installation (optional)
-install(TARGETS test_hid test_upload test_mds_e2e
+install(TARGETS test_hid test_upload test_mds_e2e test_parse_packet test_batch_upload
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/mds_bridge_tests
 )
 
 message(STATUS "HID tests will be built with mock hidapi")
 message(STATUS "Upload tests will be built with mock libcurl")
 message(STATUS "E2E tests will be built with both mocks for full integration testing")
+message(STATUS "Parse packet tests will be built for stream packet parsing")
+message(STATUS "Batch upload tests will be built for multipart/mixed upload testing")
 message(STATUS "Run 'make test' or 'ctest' to execute all test suites")
