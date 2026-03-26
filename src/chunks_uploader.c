@@ -184,6 +184,153 @@ int chunks_uploader_callback(const char *uri,
 }
 
 /* ============================================================================
+ * Batch Upload (multipart/mixed)
+ * ========================================================================== */
+
+/* Helper to parse "HeaderName: HeaderValue" into a curl header string */
+static char *prv_build_auth_header(const char *auth_header) {
+    const char *colon = strchr(auth_header, ':');
+    if (colon == NULL) {
+        return NULL;
+    }
+
+    size_t name_len = colon - auth_header;
+    char *name = malloc(name_len + 1);
+    if (name == NULL) {
+        return NULL;
+    }
+    memcpy(name, auth_header, name_len);
+    name[name_len] = '\0';
+
+    const char *value = colon + 1;
+    size_t full_len = strlen(name) + 2 + strlen(value) + 1;
+    char *full = malloc(full_len);
+    if (full == NULL) {
+        free(name);
+        return NULL;
+    }
+    snprintf(full, full_len, "%s: %s", name, value);
+    free(name);
+    return full;
+}
+
+int chunks_uploader_batch_callback(const char *uri,
+                                   const char *auth_header,
+                                   const uint8_t **chunks,
+                                   const size_t *chunk_lens,
+                                   size_t num_chunks,
+                                   void *user_data) {
+    if (uri == NULL || auth_header == NULL || chunks == NULL ||
+        chunk_lens == NULL || num_chunks == 0 || user_data == NULL) {
+        return -EINVAL;
+    }
+
+    /* Single chunk: use simple POST */
+    if (num_chunks == 1) {
+        return chunks_uploader_callback(uri, auth_header,
+                                        chunks[0], chunk_lens[0], user_data);
+    }
+
+    chunks_uploader_t *uploader = (chunks_uploader_t *)user_data;
+
+    /* Build auth header */
+    char *full_auth = prv_build_auth_header(auth_header);
+    if (full_auth == NULL) {
+        uploader->stats.upload_failures++;
+        return -EINVAL;
+    }
+
+    /* Build multipart/mixed body manually (curl mime API forces form-data) */
+    static const char *boundary = "mds-bridge-chunk-boundary";
+
+    /* Calculate total body size */
+    size_t body_size = 0;
+    for (size_t i = 0; i < num_chunks; i++) {
+        /* --boundary\r\nContent-Length: NNN\r\n\r\n<data>\r\n */
+        body_size += 2 + strlen(boundary) + 2;  /* --boundary\r\n */
+        body_size += 32;  /* Content-Length: NNN\r\n (generous) */
+        body_size += 2;  /* \r\n */
+        body_size += chunk_lens[i];  /* data */
+        body_size += 2;  /* \r\n */
+    }
+    body_size += 2 + strlen(boundary) + 2 + 2;  /* --boundary--\r\n */
+
+    char *body = malloc(body_size);
+    if (body == NULL) {
+        free(full_auth);
+        uploader->stats.upload_failures++;
+        return -ENOMEM;
+    }
+
+    size_t offset = 0;
+    for (size_t i = 0; i < num_chunks; i++) {
+        offset += snprintf(body + offset, body_size - offset,
+                           "--%s\r\nContent-Length: %zu\r\n\r\n",
+                           boundary, chunk_lens[i]);
+        memcpy(body + offset, chunks[i], chunk_lens[i]);
+        offset += chunk_lens[i];
+        memcpy(body + offset, "\r\n", 2);
+        offset += 2;
+    }
+    offset += snprintf(body + offset, body_size - offset, "--%s--\r\n", boundary);
+
+    /* Set up the request */
+    curl_easy_reset(uploader->curl);
+    curl_easy_setopt(uploader->curl, CURLOPT_URL, uri);
+    curl_easy_setopt(uploader->curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(uploader->curl, CURLOPT_POSTFIELDS, body);
+    curl_easy_setopt(uploader->curl, CURLOPT_POSTFIELDSIZE, (long)offset);
+    curl_easy_setopt(uploader->curl, CURLOPT_TIMEOUT_MS, uploader->timeout_ms);
+
+    if (uploader->verbose) {
+        curl_easy_setopt(uploader->curl, CURLOPT_VERBOSE, 1L);
+    }
+
+    char content_type[128];
+    snprintf(content_type, sizeof(content_type),
+             "Content-Type: multipart/mixed; boundary=%s", boundary);
+
+    struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, full_auth);
+    headers = curl_slist_append(headers, content_type);
+    headers = curl_slist_append(headers, "User-Agent: mds-bridge/1.0 (Memfault MDS Gateway)");
+    curl_easy_setopt(uploader->curl, CURLOPT_HTTPHEADER, headers);
+
+    /* Perform the upload */
+    CURLcode res = curl_easy_perform(uploader->curl);
+
+    long http_code = 0;
+    curl_easy_getinfo(uploader->curl, CURLINFO_RESPONSE_CODE, &http_code);
+    uploader->stats.last_http_status = http_code;
+
+    curl_slist_free_all(headers);
+    free(full_auth);
+    free(body);
+
+    if (res != CURLE_OK) {
+        fprintf(stderr, "Batch upload failed: %s\n", curl_easy_strerror(res));
+        uploader->stats.upload_failures++;
+        return -EIO;
+    }
+
+    if (http_code < 200 || http_code >= 300) {
+        fprintf(stderr, "Batch upload failed with HTTP status %ld\n", http_code);
+        uploader->stats.upload_failures++;
+        return -EIO;
+    }
+
+    /* Success */
+    size_t total_bytes = 0;
+    for (size_t i = 0; i < num_chunks; i++) {
+        total_bytes += chunk_lens[i];
+    }
+    uploader->stats.chunks_uploaded += num_chunks;
+    uploader->stats.bytes_uploaded += total_bytes;
+
+    return 0;
+}
+
+/* ============================================================================
  * Statistics
  * ========================================================================== */
 

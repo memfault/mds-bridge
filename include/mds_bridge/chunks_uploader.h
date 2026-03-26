@@ -137,6 +137,29 @@ int chunks_uploader_set_timeout(chunks_uploader_t *uploader,
 int chunks_uploader_set_verbose(chunks_uploader_t *uploader,
                                  bool verbose);
 
+/**
+ * @brief Upload multiple chunks in a single HTTP POST
+ *
+ * The Memfault chunks API accepts multiple chunks concatenated in one request.
+ * This avoids per-chunk HTTP overhead and prevents HID buffer overflow when
+ * the device is streaming faster than individual HTTP roundtrips.
+ *
+ * @param uri Data URI to POST to
+ * @param auth_header Authorization header (format: "HeaderName:HeaderValue")
+ * @param chunks Array of chunk data pointers
+ * @param chunk_lens Array of chunk lengths
+ * @param num_chunks Number of chunks to upload
+ * @param user_data Must be a chunks_uploader_t* instance
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int chunks_uploader_batch_callback(const char *uri,
+                                   const char *auth_header,
+                                   const uint8_t **chunks,
+                                   const size_t *chunk_lens,
+                                   size_t num_chunks,
+                                   void *user_data);
+
 #ifdef __cplusplus
 }
 #endif

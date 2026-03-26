@@ -334,22 +334,30 @@ int main(int argc, char *argv[]) {
                 printf("Buffered %zu chunks, uploading...\n", buffered_count);
             }
 
-            for (size_t i = 0; i < buffered_count; i++) {
-                chunk_count++;
+            chunk_count += buffered_count;
 
-                if (dry_run) {
-                    /* Call dry-run callback directly */
+            if (dry_run) {
+                for (size_t i = 0; i < buffered_count; i++) {
                     dry_run_callback(config.data_uri, config.authorization,
                                      chunk_buffer[i].data, chunk_buffer[i].len,
                                      &dry_run_chunk_count);
-                } else {
-                    /* Upload via HTTP */
-                    ret = chunks_uploader_callback(config.data_uri, config.authorization,
-                                                    chunk_buffer[i].data, chunk_buffer[i].len,
-                                                    uploader);
-                    if (ret != 0) {
-                        fprintf(stderr, "Upload failed for chunk #%d\n", chunk_count);
-                    }
+                }
+            } else {
+                /* Batch upload: send all chunks in a single HTTP POST
+                 * using multipart/mixed. Each chunk gets its own MIME part
+                 * with Content-Length, so the cloud can split them apart. */
+                const uint8_t *chunk_ptrs[CHUNK_BUFFER_SIZE];
+                size_t chunk_lens[CHUNK_BUFFER_SIZE];
+                for (size_t i = 0; i < buffered_count; i++) {
+                    chunk_ptrs[i] = chunk_buffer[i].data;
+                    chunk_lens[i] = chunk_buffer[i].len;
+                }
+
+                ret = chunks_uploader_batch_callback(
+                    config.data_uri, config.authorization,
+                    chunk_ptrs, chunk_lens, buffered_count, uploader);
+                if (ret != 0) {
+                    fprintf(stderr, "Batch upload failed for %zu chunks\n", buffered_count);
                 }
             }
 
