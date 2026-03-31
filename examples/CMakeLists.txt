@@ -5,12 +5,16 @@
 add_executable(mds_gateway mds_gateway.c)
 target_link_libraries(mds_gateway PRIVATE mds_bridge)
 
+# MDS gateway demo - CES booth version with auto-reconnect
+add_executable(mds_gateway_demo mds_gateway_demo.c)
+target_link_libraries(mds_gateway_demo PRIVATE mds_bridge)
+
 # MDS stream monitor - displays diagnostic stream data
 add_executable(mds_monitor mds_monitor.c)
 target_link_libraries(mds_monitor PRIVATE mds_bridge)
 
 # Install C examples (optional)
-install(TARGETS mds_gateway mds_monitor
+install(TARGETS mds_gateway mds_gateway_demo mds_monitor
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/mds_bridge_examples
 )
 

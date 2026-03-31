@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MDS Bridge
+GenericName=Memfault Diagnostic Bridge
+Comment=Bridge diagnostic data from embedded devices to Memfault cloud
+Exec=mds_gateway
+Icon=mds-bridge
+Categories=Development;Utility;
+Terminal=true
+Keywords=memfault;diagnostic;hid;embedded;iot;

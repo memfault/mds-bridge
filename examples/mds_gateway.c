@@ -12,8 +12,8 @@
  *   ./mds_gateway <vid> <pid> [--dry-run]
  *
  * Examples:
- *   ./mds_gateway 1234 5678              # Upload to Memfault cloud
- *   ./mds_gateway 1234 5678 --dry-run    # Print chunks without uploading
+ *   ./mds_gateway 2fe3 0007              # Upload to Memfault cloud
+ *   ./mds_gateway 2fe3 0007 --dry-run    # Print chunks without uploading
  */
 
 #include "mds_bridge/mds_protocol.h"

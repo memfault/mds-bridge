@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="#2D3748"/>
+
+  <!-- Bridge arch -->
+  <path d="M 40 160 Q 128 60 216 160"
+        fill="none"
+        stroke="#48BB78"
+        stroke-width="16"
+        stroke-linecap="round"/>
+
+  <!-- Bridge deck -->
+  <rect x="32" y="160" width="192" height="12" rx="6" fill="#48BB78"/>
+
+  <!-- Left pillar -->
+  <rect x="56" y="160" width="16" height="48" rx="4" fill="#68D391"/>
+
+  <!-- Right pillar -->
+  <rect x="184" y="160" width="16" height="48" rx="4" fill="#68D391"/>
+
+  <!-- Data flow arrows (left to right) -->
+  <path d="M 80 120 L 110 120 L 105 115 M 110 120 L 105 125"
+        fill="none"
+        stroke="#A0AEC0"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <path d="M 146 120 L 176 120 L 171 115 M 176 120 L 171 125"
+        fill="none"
+        stroke="#A0AEC0"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Center node (represents data) -->
+  <circle cx="128" cy="120" r="12" fill="#4299E1"/>
+</svg>

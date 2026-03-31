@@ -8,7 +8,7 @@
  * Usage:
  *   ./mds_monitor                    # Interactive device selection
  *   ./mds_monitor <vid> <pid>        # Specify VID/PID in hex
- *   ./mds_monitor 0x1234 0x5678
+ *   ./mds_monitor 0x2fe3 0x0007
  */
 
 #include <stdio.h>
@@ -289,7 +289,7 @@ static void print_usage(const char *program) {
     printf("\n");
     printf("Examples:\n");
     printf("  %s                    # Show all devices and select one\n", program);
-    printf("  %s 0x1234 0x5678      # Monitor device with VID:0x1234 PID:0x5678\n", program);
+    printf("  %s 0x2fe3 0x0007      # Monitor device with VID:0x2fe3 PID:0x0007\n", program);
     printf("\n");
 }
 

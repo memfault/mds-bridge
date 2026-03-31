@@ -128,3 +128,13 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/mds_bridge-config-version.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mds_bridge
 )
+
+# AppImage target (Linux only)
+if(UNIX AND NOT APPLE)
+    add_custom_target(appimage
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/appimage/build-appimage.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Building AppImage package..."
+        VERBATIM
+    )
+endif()
